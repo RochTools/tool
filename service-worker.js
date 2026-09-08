@@ -1,6 +1,6 @@
 // RochTools Service Worker
 const CACHE_NAME = "rochtools-cache-v1";
-const BASE = "/Tool/";
+const BASE = "/tool/";
 
 // Files to pre-cache so the app works offline right after install
 const PRECACHE_URLS = [
