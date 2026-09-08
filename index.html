@@ -124,19 +124,21 @@
   .hero {
     background: linear-gradient(180deg, var(--white) 0%, var(--bg) 100%);
     text-align: center; padding: 36px 20px 28px;
-    position: relative; overflow: hidden;
+    position: relative;
   }
   .hero::before {
     content: ''; position: absolute;
     width: 350px; height: 350px;
     background: radial-gradient(circle, rgba(0,71,255,0.06) 0%, transparent 70%);
     top: -100px; right: -100px; border-radius: 50%;
+    z-index: 0; pointer-events: none;
   }
   .hero::after {
     content: ''; position: absolute;
     width: 250px; height: 250px;
     background: radial-gradient(circle, rgba(0,71,255,0.04) 0%, transparent 70%);
     bottom: -80px; left: -60px; border-radius: 50%;
+    z-index: 0; pointer-events: none;
   }
   .hero-badge {
     display: inline-flex; align-items: center; gap: 6px;
@@ -188,7 +190,7 @@
     margin-top: 8px; background: var(--white);
     border: 1px solid var(--border); border-radius: var(--radius);
     overflow: hidden; display: none;
-    box-shadow: var(--shadow-lg); animation: fadeDown 0.25s ease; z-index: 100;
+    box-shadow: var(--shadow-lg); animation: fadeDown 0.25s ease; z-index: 999;
   }
   @keyframes fadeDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
   .search-result-item {
@@ -530,11 +532,57 @@ const tools = Array.from(document.querySelectorAll(".tool-card")).map(card => ({
   ]
 }));
 
+const searchInput = document.getElementById("searchInput");
+const searchResults = document.getElementById("searchResults");
+
+function renderResults(matches) {
+  if (matches.length === 0) {
+    searchResults.innerHTML = '<div class="no-results">کوئی ٹول نہیں ملا</div>';
+    searchResults.style.display = "block";
+    return;
+  }
+  searchResults.innerHTML = matches.map(tool => `
+    <a class="search-result-item" href="${tool.href}">
+      <div class="search-result-icon"><i class="fa-solid ${tool.icon}"></i></div>
+      <div>
+        <div class="search-result-name">${tool.name}</div>
+        <div class="search-result-desc">${tool.desc}</div>
+      </div>
+    </a>
+  `).join("");
+  searchResults.style.display = "block";
+}
+
+function doSearch() {
+  const query = searchInput.value.trim().toLowerCase();
+  if (query === "") {
+    searchResults.style.display = "none";
+    return;
+  }
+  const matches = tools.filter(tool =>
+    tool.keywords.some(k => k.includes(query))
+  );
+  renderResults(matches);
+}
+
+searchInput.addEventListener("input", doSearch);
+searchInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") doSearch();
+});
+searchInput.addEventListener("focus", () => {
+  if (searchInput.value.trim() !== "") doSearch();
+});
+document.addEventListener("click", (e) => {
+  if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+    searchResults.style.display = "none";
+  }
+});
+
 </script>
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/Tool/service-worker.js')
+      navigator.serviceWorker.register('/tool/service-worker.js')
         .then((reg) => console.log('Service Worker registered:', reg.scope))
         .catch((err) => console.log('Service Worker registration failed:', err));
     });
