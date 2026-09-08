@@ -1,6 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
+<link rel="manifest" href="/Tool/manifest.json">
+
+<!-- Theme Color (browser address bar کا رنگ) -->
+<meta name="theme-color" content="#0a2563">
+
+<!-- iOS Safari کے لیے (Add to Home Screen سپورٹ) -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="RochTools">
+<link rel="apple-touch-icon" href="/Tool/icons/apple-touch-icon.png">
+
+<!-- Favicon -->
+<link rel="icon" type="image/png" sizes="192x192" href="/Tool/icons/icon-192x192.png">
+
+  
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>RochTools — All Tools in One Place</title>
@@ -501,40 +517,30 @@ document.addEventListener("click", function(e) {
   </div>
   <div class="footer-bottom">&copy; 2025 RochTools. All rights reserved.</div>
 </footer>
+< script>
+const tools = Array.from(document.querySelectorAll(".tool-card")).map(card => ({
+  name: card.querySelector(".tool-name")?.innerText || "",
+  desc: card.querySelector(".tool-desc")?.innerText || "",
+  icon: card.querySelector(".tool-icon-wrap i")?.className.match(/fa-[\w-]+/g)?.pop() || "fa-wrench",
+  href: card.querySelector(".use-btn")?.getAttribute("href") || "#",
+  keywords: [
+    card.querySelector(".tool-name")?.innerText.toLowerCase() || "",
+    card.querySelector(".tool-subtitle")?.innerText.toLowerCase() || "",
+    card.querySelector(".tool-desc")?.innerText.toLowerCase() || ""
+  ]
+}));
 
-<script>
-const tools = [
-  { name: "Video Downloader", desc: "No Watermark HD Download", icon: "fa-download", href: "video-downloader.html", keywords: ["video","download","youtube","facebook","tiktok","hd","watermark"] },
-  { name: "Base64 Encoder / Decoder", desc: "Text & File Converter", icon: "fa-code", href: "base64.html", keywords: ["base64","encode","decode","convert","text","file","binary"] },
-];
-const input = document.getElementById("searchInput");
-const resultsBox = document.getElementById("searchResults");
-input.addEventListener("input", doSearch);
-input.addEventListener("keydown", function(e) { if (e.key === "Escape") { resultsBox.style.display = "none"; input.value = ""; } });
-function doSearch() {
-  const q = input.value.trim().toLowerCase();
-  if (!q) { resultsBox.style.display = "none"; return; }
-  const matched = tools.filter(t => t.name.toLowerCase().includes(q) || t.desc.toLowerCase().includes(q) || t.keywords.some(k => k.includes(q)));
-  if (matched.length === 0) {
-    resultsBox.innerHTML = '<div class="no-results"><i class="fa-solid fa-circle-exclamation"></i> No tools found for "<b>' + q + '</b>"</div>';
-  } else {
-    resultsBox.innerHTML = matched.map(t => `
-      <a class="search-result-item" href="${t.href}">
-        <div class="search-result-icon"><i class="fa-solid ${t.icon}"></i></div>
-        <div>
-          <div class="search-result-name">${t.name}</div>
-          <div class="search-result-desc">${t.desc}</div>
-        </div>
-      </a>
-    `).join("");
-  }
-  resultsBox.style.display = "block";
-}
-document.addEventListener("click", function(e) {
-  if (!e.target.closest(".search-box") && !e.target.closest("#searchResults")) {
-    resultsBox.style.display = "none";
-  }
-});
 </script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/Tool/service-worker.js')
+        .then((reg) => console.log('Service Worker registered:', reg.scope))
+        .catch((err) => console.log('Service Worker registration failed:', err));
+    });
+  }
+</script>
+  
+  
 </body>
 </html>
