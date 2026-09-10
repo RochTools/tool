@@ -155,7 +155,7 @@
         .hero {
             background: linear-gradient(180deg, var(--white) 0%, var(--bg) 100%);
             text-align: center;
-            padding: 30px 20px 24px;
+            padding: 16px 20px 10px;
             position: relative;
             overflow: hidden;
         }
@@ -187,7 +187,7 @@
             font-size: clamp(22px, 5vw, 36px);
             font-weight: 800;
             color: var(--text);
-            margin-bottom: 8px;
+            margin-bottom: 0;
             letter-spacing: -1px;
             line-height: 1.2;
             position: relative;
@@ -214,17 +214,17 @@
         /* MODE TABS */
         .mode-tabs {
             display: flex;
-            gap: 8px;
-            margin-bottom: 20px;
+            gap: 6px;
+            margin-bottom: 14px;
             background: var(--white);
             border: 1px solid var(--border);
             border-radius: var(--radius);
-            padding: 6px;
+            padding: 4px;
             box-shadow: var(--shadow-sm);
         }
         .mode-tab {
             flex: 1;
-            padding: 11px 16px;
+            padding: 8px 12px;
             border-radius: var(--radius-sm);
             border: none;
             cursor: pointer;
@@ -585,18 +585,18 @@
         /* ── SCAN ── */
         .scan-methods {
             display: flex;
-            gap: 12px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 14px;
+            flex-wrap: nowrap;
         }
         .scan-method-btn {
             flex: 1;
-            padding: 12px 10px;
+            padding: 8px 6px;
             border-radius: var(--radius-sm);
             border: 2px solid var(--border);
             background: var(--white);
             font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 700;
             color: var(--muted);
             cursor: pointer;
@@ -604,7 +604,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 6px;
+            white-space: nowrap;
         }
         .scan-method-btn.active {
             border-color: var(--blue);
@@ -698,13 +699,19 @@
             border-radius: var(--radius-sm);
             overflow: hidden;
             margin-bottom: 12px;
-            min-height: 240px;
+            aspect-ratio: 1 / 1;
+            width: 100%;
+            max-width: 420px;
+            margin-left: auto;
+            margin-right: auto;
             display: flex;
             align-items: center;
             justify-content: center;
         }
         .camera-container video {
             width: 100%;
+            height: 100%;
+            object-fit: cover;
             display: block;
             border-radius: var(--radius-sm);
         }
@@ -731,6 +738,47 @@
             border: 2px dashed rgba(255, 255, 255, 0.3);
             border-radius: 12px;
             pointer-events: none;
+            transition: border-color 0.25s ease, background 0.25s ease;
+        }
+        .camera-overlay.success {
+            border: 3px solid var(--green);
+            background: rgba(0, 0, 0, 0.55);
+        }
+        .camera-success-msg {
+            position: absolute;
+            inset: 0;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 20px;
+            text-align: center;
+            color: white;
+            z-index: 2;
+        }
+        .camera-success-msg.show {
+            display: flex;
+        }
+        .camera-success-msg i {
+            font-size: 40px;
+            color: var(--green);
+        }
+        .camera-success-msg .msg-title {
+            font-size: 15px;
+            font-weight: 600;
+        }
+        .camera-success-msg .msg-data {
+            font-size: 13px;
+            word-break: break-all;
+            max-height: 90px;
+            overflow-y: auto;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 8px 10px;
+        }
+        .camera-success-msg .msg-data a {
+            color: #8ab4ff;
         }
 
         /* INFO BOX */
@@ -858,7 +906,7 @@
                 font-size: 16px;
             }
             .hero {
-                padding: 22px 14px 18px;
+                padding: 12px 14px 8px;
             }
             .main {
                 padding: 16px 14px 40px;
@@ -922,7 +970,11 @@
                 margin-top: 10px;
             }
             .scan-methods {
-                flex-direction: column;
+                gap: 6px;
+            }
+            .scan-method-btn {
+                font-size: 11px;
+                padding: 7px 4px;
             }
             .camera-container {
                 min-height: 180px;
@@ -978,20 +1030,18 @@
 
     <!-- ─── NAVBAR ─── -->
     <nav class="nav">
-        <a href="index.html" class="nav-logo">
+        <a href="/tool/index.html" class="nav-logo">
             <div class="nav-logo-icon"><i class="fa-solid fa-bolt"></i></div>
             <span class="nav-logo-text">Roch<span>Tools</span></span>
         </a>
-        <a class="nav-back" href="index.html">
+        <a class="nav-back" href="/tool/index.html">
             <i class="fa-solid fa-arrow-left"></i> All Tools
         </a>
     </nav>
 
     <!-- ─── HERO ─── -->
     <div class="hero">
-        <div class="hero-badge"><i class="fa-solid fa-shield-check"></i> 100% Browser-Side · Zero Data Upload</div>
         <h1>QR Code <span class="blue">Generator</span> &amp; Scanner</h1>
-        <p>Create QR codes from text, URLs, or any data — or scan them from images or camera — instantly, privately, free</p>
     </div>
 
     <!-- ─── MAIN ─── -->
@@ -1125,7 +1175,12 @@
                             <i class="fa-solid fa-camera"></i>
                             <span>Camera not started</span>
                         </div>
-                        <div class="camera-overlay"></div>
+                        <div class="camera-overlay" id="cameraOverlay"></div>
+                        <div class="camera-success-msg" id="cameraSuccessMsg">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <div class="msg-title">QR Code Scanned!</div>
+                            <div class="msg-data" id="cameraSuccessData"></div>
+                        </div>
                     </div>
                     <div class="btn-row">
                         <button class="btn btn-primary" id="cameraStartBtn" onclick="startCamera()">
@@ -1448,6 +1503,20 @@
         }
         resultEl.classList.add('show');
         setCameraStatus('✓ QR Code decoded!', 'ok');
+
+        // Show result right inside the camera box + highlight overlay
+        const overlay = document.getElementById('cameraOverlay');
+        const successMsg = document.getElementById('cameraSuccessMsg');
+        const successData = document.getElementById('cameraSuccessData');
+        if (overlay) overlay.classList.add('success');
+        if (successData) {
+            if (isValidURL(data)) {
+                successData.innerHTML = `<a href="${data}" target="_blank" rel="noopener noreferrer">${data}</a>`;
+            } else {
+                successData.textContent = data;
+            }
+        }
+        if (successMsg) successMsg.classList.add('show');
     }
 
     function isValidURL(str) {
@@ -1475,6 +1544,8 @@
 
                 // Clear previous result
                 document.getElementById('cameraScanResult').classList.remove('show');
+                document.getElementById('cameraOverlay').classList.remove('success');
+                document.getElementById('cameraSuccessMsg').classList.remove('show');
                 cameraDecoded = false;
 
                 // Start scanning loop
@@ -1507,6 +1578,8 @@
         document.getElementById('cameraStartBtn').style.display = '';
         document.getElementById('cameraStopBtn').style.display = 'none';
         document.getElementById('cameraStatus').className = 'status-bar';
+        document.getElementById('cameraOverlay').classList.remove('success');
+        document.getElementById('cameraSuccessMsg').classList.remove('show');
         cameraDecoded = false;
     }
 
