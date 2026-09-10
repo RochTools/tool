@@ -1060,7 +1060,7 @@
         <!-- ─── GENERATE MODE ─── -->
         <div id="mode-generate">
 
-            <div class="card">
+            <div class="card" id="qrInputCard">
                 <div class="card-title"><i class="fa-solid fa-pen-to-square"></i> Enter Data</div>
                 <textarea id="qrInput" placeholder="Type or paste text URL or any data to encode into a QR code…" spellcheck="false"></textarea>
                 <div class="char-count" id="qrInputCount">0 characters</div>
@@ -1100,9 +1100,6 @@
                     <button class="btn btn-primary" onclick="generateQR()">
                         <i class="fa-solid fa-qrcode"></i> Generate QR Code
                     </button>
-                    <button class="btn btn-success" id="downloadBtn" onclick="downloadQR()" style="display:none">
-                        <i class="fa-solid fa-download"></i> Download PNG
-                    </button>
                     <button class="btn btn-danger" onclick="clearQR()">
                         <i class="fa-solid fa-xmark"></i> Clear
                     </button>
@@ -1111,10 +1108,12 @@
 
             <div class="status-bar" id="qrStatus"></div>
 
-            <div class="card">
+            <div class="card" id="qrPreviewCard">
                 <div class="output-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                    <button class="btn" id="editQRBtn" onclick="showQRInput()" style="display:none;padding:6px 12px;font-size:12px;background:var(--bg);border:2px solid var(--border);color:var(--text)">
+                        <i class="fa-solid fa-arrow-left"></i> Edit
+                    </button>
                     <div class="output-label"><i class="fa-solid fa-image" style="color:var(--blue);margin-right:6px"></i>QR Code Preview</div>
-                    <span style="font-size:11px;color:var(--muted)">Right-click to save</span>
                 </div>
                 <div class="qr-container" id="qrContainer">
                     <!-- DECORATIVE FRAME -->
@@ -1147,6 +1146,11 @@
                             <i class="fa-solid fa-bolt"></i>
                         </div>
                     </div>
+                </div>
+                <div class="btn-row" style="margin-top:14px">
+                    <button class="btn btn-success" id="downloadBtn" onclick="downloadQR()" style="display:none">
+                        <i class="fa-solid fa-download"></i> Download PNG
+                    </button>
                 </div>
             </div>
         </div>
@@ -1365,6 +1369,11 @@
                     currentQRDataURL = canvas.toDataURL('image/png');
                     document.getElementById('downloadBtn').style.display = '';
                     setQRStatus('✓ QR Code generated successfully!', 'ok');
+
+                    // Switch to focused preview view
+                    document.getElementById('qrInputCard').style.display = 'none';
+                    document.getElementById('editQRBtn').style.display = '';
+                    document.getElementById('qrPreviewCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
                 } else {
                     setQRStatus('Error: QR code not rendered.', 'err');
                 }
@@ -1373,6 +1382,13 @@
         } catch (e) {
             setQRStatus('Error generating QR code: ' + e.message, 'err');
         }
+    }
+
+    // ─── Toggle back to input view (same page, no reload) ──────
+    function showQRInput() {
+        document.getElementById('qrInputCard').style.display = '';
+        document.getElementById('editQRBtn').style.display = 'none';
+        document.getElementById('qrInputCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     function getCorrectionLevel(level) {
@@ -1482,6 +1498,7 @@
         document.getElementById('qrStatus').className = 'status-bar';
         currentQR = null;
         currentQRDataURL = null;
+        showQRInput();
     }
 
     // ── CAMERA SCAN ──────────────────────────────────────────
