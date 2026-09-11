@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gravity & Orbit Simulator</title>
+    <meta name="description" content="N-body gravity simulation with orbital mechanics - mobile friendly">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html, body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #000;
+            height: 100%;
+            overflow: hidden;
+            color: #e0e0e0;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+        }
+        #app { display: flex; height: 100vh; height: 100dvh; position: relative; }
+
+        /* ---- Sidebar / Menu Panel ---- */
+        #sidebar {
+            width: 320px;
+            background: rgba(10, 10, 20, 0.98);
+            padding: 20px;
+            overflow-y: auto;
+            border-right: 2px solid #ffeb3b;
+            transition: transform 0.3s ease;
+            z-index: 100;
+            -webkit-overflow-scrolling: touch;
+            /* body ki touch-action:none sidebar scrolling na roke (mobile) */
+            touch-action: pan-y;
+        }
+        h1 { font-size: 18px; color: #ffeb3b; margin-bottom: 15px; }
+        .section {
+            margin-bottom: 15px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+        .section h3 {
+            font-size: 11px;
+            color: #ffeb3b;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 11px;
+            color: #aaa;
+        }
+        input[type="range"] {
+            width: 100%;
+            margin-bottom: 12px;
+            height: 28px;
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        .slider-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .slider-row input[type="range"] {
+            margin-bottom: 0;
+            flex: 1;
+        }
+        .stepper-btn {
+            flex-shrink: 0;
+            width: 32px;
+            height: 32px;
+            /* Override global button rules (min-height:44px / padding:12px /
+               margin-bottom:8px) which otherwise stretch these into ovals */
+            min-height: 0;
+            padding: 0;
+            margin: 0;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255, 235, 59, 0.15);
+            color: #ffeb3b;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        .stepper-btn:active { background: rgba(255, 235, 59, 0.4); transform: scale(0.9); }
+        input[type="range"]::-webkit-slider-runnable-track {
+            height: 6px;
+            background: #333;
+            border-radius: 3px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            background: #ffeb3b;
+            border-radius: 50%;
+            margin-top: -8px;
+            cursor: pointer;
+        }
+        input[type="range"]::-moz-range-track {
+            height: 6px;
+            background: #333;
+            border-radius: 3px;
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 22px;
+            height: 22px;
+            background: #ffeb3b;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+        }
+        input[type="color"] {
+            width: 100%;
+            height: 40px;
+            padding: 2px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #ffeb3b;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #ffeb3b;
+            color: #000;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-bottom: 8px;
+            font-weight: bold;
+            font-size: 13px;
+            min-height: 44px;
+            touch-action: manipulation;
+        }
+        button:active { background: #ffd700; transform: scale(0.98); }
+        .value-display {
+            float: right;
+            color: #ffeb3b;
+            font-weight: bold;
+        }
+        /* ---- Editable value box (type karke exact value, decimals OK) ---- */
+        .value-input {
+            float: right;
+            width: 82px;
+            background: rgba(0, 0, 0, 0.55);
+            border: 1px solid #ffeb3b;
+            border-radius: 4px;
+            color: #ffeb3b;
+            font-weight: bold;
+            font-size: 12px;
+            font-family: inherit;
+            text-align: right;
+            padding: 3px 6px;
+            user-select: text;
+            -webkit-user-select: text;
+            touch-action: manipulation;
+        }
+        .value-input:focus {
+            outline: none;
+            border-color: #fff;
+            background: rgba(0, 0, 0, 0.85);
+        }
+        .unit-suffix {
+            float: right;
+            color: #ffeb3b;
+            font-weight: bold;
+            font-size: 11px;
+            margin: 3px 5px 0 0;
+        }
+        /* ---- Position X/Y fields ---- */
+        .pos-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .pos-field {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        .pos-field input {
+            display: block;
+            width: 100%;
+            margin-top: 4px;
+            background: rgba(0, 0, 0, 0.55);
+            border: 1px solid #ffeb3b;
+            border-radius: 4px;
+            color: #e0e0e0;
+            font-size: 12px;
+            font-family: inherit;
+            padding: 8px 6px;
+            min-height: 36px;
+            text-align: center;
+            user-select: text;
+            -webkit-user-select: text;
+            touch-action: manipulation;
+        }
+        .pos-field input:focus {
+            outline: none;
+            border-color: #fff;
+            background: rgba(0, 0, 0, 0.85);
+        }
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 12px;
+            min-height: 32px;
+        }
+        .checkbox-row input {
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+            accent-color: #ffeb3b;
+        }
+
+        /* ---- Main Area ---- */
+        #main { flex: 1; display: flex; flex-direction: column; position: relative; min-width: 0; }
+        #header {
+            background: rgba(10, 10, 20, 0.95);
+            padding: 10px 15px;
+            border-bottom: 2px solid #ffeb3b;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 50;
+        }
+        #header h2 { font-size: 14px; color: #ffeb3b; }
+        #canvas-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            cursor: crosshair;
+        }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* ---- Preset Grid ---- */
+        .preset-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+        .preset-btn {
+            padding: 10px 6px;
+            background: rgba(255, 235, 59, 0.15);
+            border: 1px solid #ffeb3b;
+            color: #e0e0e0;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: center;
+            font-size: 10px;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: manipulation;
+        }
+        .preset-btn:active { background: rgba(255, 235, 59, 0.4); transform: scale(0.97); }
+
+        /* ---- Stats ---- */
+        #stats {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(10, 10, 20, 0.9);
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 11px;
+            border: 1px solid #ffeb3b;
+            z-index: 20;
+            backdrop-filter: blur(4px);
+        }
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+            gap: 12px;
+        }
+        .stat-value { color: #ffeb3b; font-weight: bold; }
+
+        /* ---- Body List ---- */
+        .body-list {
+            max-height: 150px;
+            overflow-y: auto;
+            margin-top: 8px;
+            -webkit-overflow-scrolling: touch;
+        }
+        .body-item {
+            padding: 6px 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+        }
+        .body-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+        .remove-btn {
+            width: auto;      /* global button{width:100%} se bachao */
+            flex-shrink: 0;
+            padding: 4px 10px;
+            background: #ff6b6b;
+            color: #fff;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+            min-height: 32px;
+            touch-action: manipulation;
+        }
+
+        /* ---- Mobile Menu Button ---- */
+        #menu-toggle {
+            display: none;
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 200;
+            width: 48px;
+            height: 48px;
+            background: rgba(255, 235, 59, 0.9);
+            color: #000;
+            border: none;
+            border-radius: 50%;
+            font-size: 22px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(255, 235, 59, 0.4);
+            align-items: center;
+            justify-content: center;
+            touch-action: manipulation;
+        }
+        #menu-toggle:active { transform: scale(0.9); }
+
+        #sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 90;
+            backdrop-filter: blur(2px);
+        }
+
+        /* ---- Info Text ---- */
+        .info-text {
+            font-size: 10px;
+            color: #888;
+            line-height: 1.5;
+            margin-top: 8px;
+        }
+
+        /* ---- Hint Banner ---- */
+        #hint {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 235, 59, 0.95);
+            color: #000;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 30;
+            display: none;
+            pointer-events: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            max-width: calc(100vw - 30px);
+            white-space: normal;
+            text-align: center;
+        }
+        #hint.show { display: block; animation: pulse 1.5s infinite; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* ---- MOBILE RESPONSIVE ---- */
+        @media (max-width: 768px) {
+            #sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100vh;
+                height: 100dvh;
+                width: 85vw;
+                max-width: 340px;
+                transform: translateX(-100%);
+                box-shadow: 4px 0 20px rgba(0,0,0,0.8);
+                padding-top: 60px;
+            }
+            #sidebar.open { transform: translateX(0); }
+            #sidebar-overlay.open { display: block; }
+            #menu-toggle { display: flex; }
+            #header { padding-left: 65px; }
+            #stats {
+                top: 10px;
+                right: 10px;
+                padding: 8px;
+                font-size: 10px;
+            }
+            .stat-row { gap: 8px; margin-bottom: 3px; }
+            h1 { font-size: 16px; }
+            button { min-height: 46px; font-size: 14px; }
+            input[type="range"] { height: 34px; }
+        }
+
+        @media (max-width: 380px) {
+            #sidebar { width: 92vw; }
+            #header h2 { font-size: 12px; }
+            #stats { font-size: 9px; padding: 6px 8px; }
+        }
+
+        /* ---- Landscape Mobile ---- */
+        @media (max-height: 500px) and (orientation: landscape) {
+            #sidebar { padding-top: 55px; }
+            .section { padding: 8px; margin-bottom: 8px; }
+            h1 { font-size: 14px; margin-bottom: 8px; }
+            button { padding: 8px; min-height: 40px; font-size: 12px; }
+            input[type="range"] { margin-bottom: 6px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <button id="menu-toggle" aria-label="Toggle menu">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+        </svg>
+    </button>
+    <div id="sidebar-overlay"></div>
+
+    <div id="app">
+        <div id="sidebar">
+            <h1><i class="fa-solid fa-ring"></i>&nbsp; Gravity Simulator</h1>
+
+            <div class="section">
+                <h3>Add Body</h3>
+                <label>Position X / Y <span style="color:#666;">(optional — empty = tap canvas)</span></label>
+                <div class="pos-row">
+                    <label class="pos-field">X<input type="text" inputmode="decimal" id="posX" placeholder="e.g. 120.5" autocomplete="off" aria-label="Position X"></label>
+                    <label class="pos-field">Y<input type="text" inputmode="decimal" id="posY" placeholder="e.g. -40.25" autocomplete="off" aria-label="Position Y"></label>
+                </div>
+
+                <label>Mass <input type="text" inputmode="decimal" class="value-input" id="massVal" value="1000" autocomplete="off" aria-label="Mass value"></label>
+                <div class="slider-row">
+                    <button class="stepper-btn" data-target="mass" data-dir="-1" type="button"><i class="fa-solid fa-minus"></i></button>
+                    <input type="range" id="mass" min="1" max="100000" step="0.1" value="1000">
+                    <button class="stepper-btn" data-target="mass" data-dir="1" type="button"><i class="fa-solid fa-plus"></i></button>
+                </div>
+
+                <label>Velocity X <input type="text" inputmode="decimal" class="value-input" id="velXVal" value="0" autocomplete="off" aria-label="Velocity X value"></label>
+                <div class="slider-row">
+                    <button class="stepper-btn" data-target="velX" data-dir="-1" type="button"><i class="fa-solid fa-minus"></i></button>
+                    <input type="range" id="velX" min="-500" max="500" step="0.1" value="0">
+                    <button class="stepper-btn" data-target="velX" data-dir="1" type="button"><i class="fa-solid fa-plus"></i></button>
+                </div>
+
+                <label>Velocity Y <input type="text" inputmode="decimal" class="value-input" id="velYVal" value="0" autocomplete="off" aria-label="Velocity Y value"></label>
+                <div class="slider-row">
+                    <button class="stepper-btn" data-target="velY" data-dir="-1" type="button"><i class="fa-solid fa-minus"></i></button>
+                    <input type="range" id="velY" min="-500" max="500" step="0.1" value="0">
+                    <button class="stepper-btn" data-target="velY" data-dir="1" type="button"><i class="fa-solid fa-plus"></i></button>
+                </div>
+
+                <label>Color</label>
+                <input type="color" id="bodyColor" value="#ffeb3b">
+
+                <button id="addBodyBtn"><i class="fa-solid fa-crosshairs"></i>&nbsp; Click to Add Body</button>
+            </div>
+
+            <div class="section">
+                <h3>Physics Settings</h3>
+                <label>Gravity Constant <input type="text" inputmode="decimal" class="value-input" id="gravConstVal" value="100" autocomplete="off" aria-label="Gravity constant value"></label>
+                <div class="slider-row">
+                    <button class="stepper-btn" data-target="gravConst" data-dir="-1" type="button"><i class="fa-solid fa-minus"></i></button>
+                    <input type="range" id="gravConst" min="10" max="500" step="0.1" value="100">
+                    <button class="stepper-btn" data-target="gravConst" data-dir="1" type="button"><i class="fa-solid fa-plus"></i></button>
+                </div>
+
+                <label>Time Speed <span class="unit-suffix">x</span><input type="text" inputmode="decimal" class="value-input" id="timeSpeedVal" value="1.0" autocomplete="off" aria-label="Time speed value"></label>
+                <div class="slider-row">
+                    <button class="stepper-btn" data-target="timeSpeed" data-dir="-1" type="button"><i class="fa-solid fa-minus"></i></button>
+                    <input type="range" id="timeSpeed" min="0.1" max="5" step="0.1" value="1">
+                    <button class="stepper-btn" data-target="timeSpeed" data-dir="1" type="button"><i class="fa-solid fa-plus"></i></button>
+                </div>
+
+                <label>Trail Length <input type="text" inputmode="decimal" class="value-input" id="trailLengthVal" value="50" autocomplete="off" aria-label="Trail length value"></label>
+                <div class="slider-row">
+                    <button class="stepper-btn" data-target="trailLength" data-dir="-1" type="button"><i class="fa-solid fa-minus"></i></button>
+                    <input type="range" id="trailLength" min="0" max="200" value="50">
+                    <button class="stepper-btn" data-target="trailLength" data-dir="1" type="button"><i class="fa-solid fa-plus"></i></button>
+                </div>
+
+                <div class="checkbox-row">
+                    <input type="checkbox" id="collisions" checked>
+                    <label for="collisions" style="margin:0;">Enable Collisions</label>
+                </div>
+
+                <div class="checkbox-row">
+                    <input type="checkbox" id="showVectors">
+                    <label for="showVectors" style="margin:0;">Show Velocity Vectors</label>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Presets</h3>
+                <div class="preset-grid">
+                    <div class="preset-btn" data-preset="solar"><i class="fa-solid fa-sun"></i>&nbsp; Solar</div>
+                    <div class="preset-btn" data-preset="binary"><i class="fa-solid fa-atom"></i>&nbsp; Binary</div>
+                    <div class="preset-btn" data-preset="figure8"><i class="fa-solid fa-infinity"></i>&nbsp; Figure-8</div>
+                    <div class="preset-btn" data-preset="chaos"><i class="fa-solid fa-bolt"></i>&nbsp; Chaos</div>
+                    <div class="preset-btn" data-preset="galaxy" style="grid-column: span 2;"><i class="fa-solid fa-meteor"></i>&nbsp; Mini Galaxy</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Bodies</h3>
+                <div class="body-list" id="bodyList"></div>
+            </div>
+
+            <div class="section">
+                <h3>Actions</h3>
+                <button id="pauseBtn"><i class="fa-solid fa-pause"></i>&nbsp; Pause</button>
+                <button id="clearBtn"><i class="fa-solid fa-trash"></i>&nbsp; Clear All</button>
+                <button id="centerBtn"><i class="fa-solid fa-crosshairs"></i>&nbsp; Center View</button>
+                <button id="resetCamBtn"><i class="fa-solid fa-camera"></i>&nbsp; Reset Camera</button>
+            </div>
+
+            <div class="info-text">
+                Tip: yellow boxes me exact values TYPE kar sakte hain — decimals (e.g. 223.6) bhi chalte hain. Position X/Y bhar kar body exact coordinates par rakhein, ya khali chhor kar canvas pe tap karein. Pinch to zoom, drag to pan. Bodies attract each other and can merge on collision.
+            </div>
+        </div>
+
+        <div id="main">
+            <div id="header">
+                <h2>N-Body Gravity Simulation</h2>
+            </div>
+
+            <div id="canvas-container">
+                <canvas id="canvas"></canvas>
+                <div id="stats">
+                    <div class="stat-row">
+                        <span>Bodies:</span>
+                        <span class="stat-value" id="bodyCount">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>FPS:</span>
+                        <span class="stat-value" id="fps">60</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Energy:</span>
+                        <span class="stat-value" id="energy">0</span>
+                    </div>
+                </div>
+                                <div id="hint"><i class="fa-solid fa-hand-pointer"></i>&nbsp; Tap on the canvas to place bodies</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        let bodies = [];
+        let isPaused = false;
+        let addMode = false;
+        let cameraX = 0, cameraY = 0;
+        let zoom = 1;
+        let lastTime = Date.now();
+
+        // ---- DPR-aware canvas setup ----
+        let dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+        let params = {
+            mass: 1000,
+            velX: 0,
+            velY: 0,
+            bodyColor: '#ffeb3b',
+            gravConst: 100,
+            timeSpeed: 1,
+            trailLength: 50,
+            collisions: true,
+            showVectors: false
+        };
+
+        // ==============================================
+        // COLOR HELPER
+        // Safely applies an alpha value to a color string,
+        // whether it's hex ('#ffeb3b') or hsl('hsl(200,100%,70%)').
+        // Simply concatenating a hex alpha suffix onto an hsl()
+        // string produces an invalid CSS color and throws:
+        //   "Failed to execute 'addColorStop' ... could not be parsed as a color"
+        // ==============================================
+        function withAlpha(color, alphaHex) {
+            if (color.startsWith('#')) {
+                return color + alphaHex;
+            }
+            if (color.startsWith('hsl(')) {
+                const alpha = (parseInt(alphaHex, 16) / 255).toFixed(3);
+                return color.replace('hsl(', 'hsla(').replace(')', `, ${alpha})`);
+            }
+            // Fallback: return color unchanged if format is unrecognized
+            return color;
+        }
+
+        // ==============================================
+        // BODY CLASS
+        // ==============================================
+        class Body {
+            constructor(x, y, vx, vy, mass, color) {
+                this.x = x;
+                this.y = y;
+                this.vx = vx;
+                this.vy = vy;
+                this.mass = mass;
+                this.radius = Math.sqrt(mass / Math.PI) / 2;
+                this.color = color;
+                this.trail = [];
+                this.id = Math.random();
+            }
+
+            update(dt, allBodies) {
+                let fx = 0, fy = 0;
+
+                for (let i = 0; i < allBodies.length; i++) {
+                    const other = allBodies[i];
+                    if (other.id === this.id) continue;
+
+                    const dx = other.x - this.x;
+                    const dy = other.y - this.y;
+                    const distSq = dx * dx + dy * dy;
+                    const dist = Math.sqrt(distSq);
+
+                    if (dist < 1) continue;
+
+                    const force = params.gravConst * this.mass * other.mass / distSq;
+                    fx += force * dx / dist;
+                    fy += force * dy / dist;
+                }
+
+                this.vx += (fx / this.mass) * dt;
+                this.vy += (fy / this.mass) * dt;
+
+                this.x += this.vx * dt;
+                this.y += this.vy * dt;
+
+                // Trail (only keep recent points, and cap for performance)
+                if (params.trailLength > 0) {
+                    this.trail.push({ x: this.x, y: this.y });
+                    if (this.trail.length > params.trailLength) {
+                        this.trail.shift();
+                    }
+                } else if (this.trail.length > 0) {
+                    this.trail.length = 0;
+                }
+            }
+
+            draw() {
+                const screenX = (this.x - cameraX) * zoom + width / 2;
+                const screenY = (this.y - cameraY) * zoom + height / 2;
+                const r = Math.max(1.5, this.radius * zoom);
+
+                // Trail
+                if (this.trail.length > 1) {
+                    ctx.strokeStyle = withAlpha(this.color, '44');
+                    ctx.lineWidth = Math.max(1, 1.5 * zoom);
+                    ctx.beginPath();
+                    for (let i = 0; i < this.trail.length; i++) {
+                        const pos = this.trail[i];
+                        const sx = (pos.x - cameraX) * zoom + width / 2;
+                        const sy = (pos.y - cameraY) * zoom + height / 2;
+                        if (i === 0) ctx.moveTo(sx, sy);
+                        else ctx.lineTo(sx, sy);
+                    }
+                    ctx.stroke();
+                }
+
+                // Glow
+                if (r > 2) {
+                    const gradient = ctx.createRadialGradient(screenX, screenY, 0, screenX, screenY, r * 2.5);
+                    gradient.addColorStop(0, withAlpha(this.color, 'AA'));
+                    gradient.addColorStop(1, withAlpha(this.color, '00'));
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.arc(screenX, screenY, r * 2.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // Body
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(screenX, screenY, r, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Velocity vector
+                if (params.showVectors) {
+                    const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                    if (speed > 1) {
+                        ctx.strokeStyle = '#00ff88';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.moveTo(screenX, screenY);
+                        ctx.lineTo(screenX + this.vx * 0.1 * zoom, screenY + this.vy * 0.1 * zoom);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        // ==============================================
+        // CANVAS RESIZE (DPR aware)
+        // ==============================================
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            width = container.clientWidth;
+            height = container.clientHeight;
+            dpr = Math.min(window.devicePixelRatio || 1, 2);
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        // ==============================================
+        // PHYSICS UPDATE
+        // ==============================================
+        function update() {
+            if (!isPaused) {
+                const now = Date.now();
+                // BUGFIX: frame delta ko pehle capture karo. Pehle lastTime
+                // yahan overwrite ho jata tha aur neeche FPS hamesha
+                // 1000/max(1,0)=999 calculate hota tha.
+                const frameMs = now - lastTime;
+                const dt = Math.min(frameMs / 1000, 0.033) * params.timeSpeed;
+                lastTime = now;
+
+                for (let i = 0; i < bodies.length; i++) {
+                    bodies[i].update(dt, bodies);
+                }
+
+                // Collisions
+                if (params.collisions) {
+                    for (let i = bodies.length - 1; i >= 0; i--) {
+                        for (let j = i - 1; j >= 0; j--) {
+                            const b1 = bodies[i];
+                            const b2 = bodies[j];
+                            const dx = b2.x - b1.x;
+                            const dy = b2.y - b1.y;
+                            const dist = Math.sqrt(dx * dx + dy * dy);
+                            const minDist = b1.radius + b2.radius;
+
+                            if (dist < minDist && dist > 0.001) {
+                                const totalMass = b1.mass + b2.mass;
+                                b1.vx = (b1.vx * b1.mass + b2.vx * b2.mass) / totalMass;
+                                b1.vy = (b1.vy * b1.mass + b2.vy * b2.mass) / totalMass;
+                                b1.x = (b1.x * b1.mass + b2.x * b2.mass) / totalMass;
+                                b1.y = (b1.y * b1.mass + b2.y * b2.mass) / totalMass;
+                                b1.mass = totalMass;
+                                b1.radius = Math.sqrt(totalMass / Math.PI) / 2;
+                                bodies.splice(j, 1);
+                                i--; // adjust outer index after removal
+                            }
+                        }
+                    }
+                }
+
+                // Energy
+                let totalEnergy = 0;
+                for (const b of bodies) {
+                    totalEnergy += 0.5 * b.mass * (b.vx * b.vx + b.vy * b.vy);
+                }
+                document.getElementById('energy').textContent = Math.round(totalEnergy);
+
+                // FPS (frameMs use karo — 'now - lastTime' ab hamesha 0 hota hai)
+                const fps = Math.round(1000 / Math.max(1, frameMs));
+                document.getElementById('fps').textContent = Math.min(fps, 999);
+            } else {
+                lastTime = Date.now();
+            }
+
+            render();
+            updateBodyList();
+            requestAnimationFrame(update);
+        }
+
+        let lastBodyListUpdate = 0;
+        function updateBodyList() {
+            const now = Date.now();
+            if (now - lastBodyListUpdate < 500) return;
+            lastBodyListUpdate = now;
+            const list = document.getElementById('bodyList');
+            if (bodies.length === 0) {
+                list.innerHTML = '<div style="color:#666;font-size:11px;">No bodies</div>';
+                return;
+            }
+            list.innerHTML = bodies.map((body, i) => `
+                <div class="body-item">
+                    <div>
+                        <span class="body-color" style="background:${body.color}"></span>
+                        Mass: ${Math.round(body.mass)}
+                    </div>
+                    <button class="remove-btn" data-idx="${i}">✕</button>
+                </div>
+            `).join('');
+        }
+
+        // Event delegation for remove buttons
+        document.getElementById('bodyList').addEventListener('click', (e) => {
+            const btn = e.target.closest('.remove-btn');
+            if (btn) {
+                const idx = parseInt(btn.dataset.idx, 10);
+                if (!isNaN(idx)) removeBody(idx);
+            }
+        });
+
+        function render() {
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, width, height);
+
+            // Subtle grid
+            ctx.strokeStyle = 'rgba(255, 235, 59, 0.05)';
+            ctx.lineWidth = 1;
+            const gridSize = 100 * zoom;
+            if (gridSize > 15) {
+                const offX = (-cameraX * zoom + width / 2) % gridSize;
+                const offY = (-cameraY * zoom + height / 2) % gridSize;
+                for (let x = offX; x < width; x += gridSize) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, height);
+                    ctx.stroke();
+                }
+                for (let y = offY; y < height; y += gridSize) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(width, y);
+                    ctx.stroke();
+                }
+            }
+
+            for (const body of bodies) body.draw();
+
+            document.getElementById('bodyCount').textContent = bodies.length;
+        }
+
+        // ==============================================
+        // ADD / REMOVE BODIES
+        // ==============================================
+        function addBody(screenX, screenY) {
+            const worldX = (screenX - width / 2) / zoom + cameraX;
+            const worldY = (screenY - height / 2) / zoom + cameraY;
+            bodies.push(new Body(
+                worldX, worldY,
+                params.velX, params.velY,
+                params.mass, params.bodyColor
+            ));
+            updateBodyList();
+        }
+
+        function removeBody(index) {
+            if (index >= 0 && index < bodies.length) {
+                bodies.splice(index, 1);
+                updateBodyList();
+            }
+        }
+
+        function addBodyMode() {
+            addMode = !addMode;
+            canvas.style.cursor = addMode ? 'crosshair' : 'default';
+            const btn = document.getElementById('addBodyBtn');
+            if (addMode) {
+                btn.innerHTML = '<i class="fa-solid fa-check"></i>&nbsp; Tap Canvas Now';
+                btn.style.background = '#00ff88';
+                showHint('<i class="fa-solid fa-hand-pointer"></i>&nbsp; Tap on the canvas to place body');
+                // Close sidebar on mobile
+                if (window.innerWidth <= 768) closeSidebar();
+            } else {
+                btn.innerHTML = '<i class="fa-solid fa-crosshairs"></i>&nbsp; Click to Add Body';
+                btn.style.background = '#ffeb3b';
+                hideHint();
+            }
+        }
+
+        function showHint(text) {
+            const hint = document.getElementById('hint');
+            hint.innerHTML = text;
+            hint.classList.add('show');
+        }
+        function hideHint() {
+            document.getElementById('hint').classList.remove('show');
+        }
+
+        // ==============================================
+        // PRESETS
+        // ==============================================
+        function loadPreset(name) {
+            // BUGFIX: gravConst ko presets banane se PEHLE reset karo.
+            // Saare presets gravConst=100 ke liye tuned hain, aur neeche
+            // procedural galaxy har star ki circular velocity CURRENT
+            // gravConst se calculate karti hai — reset baad me hone ki
+            // wajah se slider kisi aur value pe hone par galaxy ke stars
+            // core me spiral karke collapse ho jate the.
+            params.gravConst = 100;
+            document.getElementById('gravConst').value = 100;
+            document.getElementById('gravConstVal').value = '100';
+
+            const presets = {
+                solar: [
+                    { x: 0, y: 0, vx: 0, vy: 0, mass: 100000, color: '#ffeb3b' },
+                    { x: 200, y: 0, vx: 0, vy: 224, mass: 100, color: '#4fc3f7' },
+                    { x: 350, y: 0, vx: 0, vy: 169, mass: 60, color: '#ff6b6b' },
+                    { x: 500, y: 0, vx: 0, vy: 141, mass: 40, color: '#51cf66' }
+                ],
+                binary: [
+                    // BUGFIX: pehle vy=±150 tha jo escape velocity se kai
+                    // guna zyada tha — dono sitare ud kar screen se bahar
+                    // chale jate the. Circular orbit ke liye:
+                    // v = sqrt(G*M*r/d^2) = sqrt(100*2000*100/200^2) ≈ 22.4
+                    { x: -100, y: 0, vx: 0, vy: -22.4, mass: 2000, color: '#ff006e' },
+                    { x: 100, y: 0, vx: 0, vy: 22.4, mass: 2000, color: '#4fc3f7' }
+                ],
+                figure8: [
+                    // BUGFIX: Chenciner–Montgomery figure-8 solution
+                    // (G=m=1 units me: x1=(0.97000436,-0.24308753),
+                    // v3=(-0.93240737,-0.86473146), v1=v2=-v3/2) ko
+                    // G=100, m=1000 ke liye scale kiya gaya:
+                    // length ×100, velocity ×sqrt(G*m/length)=×31.6228.
+                    // Purani values (±100,0 @ 46.7/43.3) galat positions aur
+                    // ~3x zyada speed thi — system bikhar jata tha.
+                    { x: 97.0004, y: -24.3088, vx: 14.7426, vy: 13.6726, mass: 1000, color: '#ff006e' },
+                    { x: -97.0004, y: 24.3088, vx: 14.7426, vy: 13.6726, mass: 1000, color: '#00ff88' },
+                    { x: 0, y: 0, vx: -29.4852, vy: -27.3452, mass: 1000, color: '#4fc3f7' }
+                ],
+                chaos: [
+                    // BUGFIX: heavy core + ~90% circular-speed orbiters =>
+                    // eccentric, mutually-perturbing (chaotic) lekin BOUND
+                    // orbits. Purani velocities (180/120) escape velocity se
+                    // 3-5x zyada thin — sab turant ud jata tha.
+                    { x: 0, y: 0, vx: 0, vy: 0, mass: 5000, color: '#ffeb3b' },
+                    { x: 200, y: 0, vx: 0, vy: 63, mass: 800, color: '#ff006e' },
+                    { x: -150, y: 150, vx: -31, vy: -31, mass: 800, color: '#4fc3f7' },
+                    { x: -150, y: -150, vx: 31, vy: -31, mass: 800, color: '#00ff88' }
+                ],
+                galaxy: null // filled below
+            };
+
+            // Galaxy is procedural
+            // BUGFIX (tuning): pehle stars ka total mass (~50×125 ≈ 6250)
+            // core (5000) se zyada tha — disk ki self-gravity se pura
+            // galaxy ~10s me clump karke core me gir jata tha (51 -> ~10).
+            // Ab core dominant hai (30000) aur stars halki hain
+            // (near-test-particles), isliye disk stable Keplerian orbits
+            // me ghumti hai (~90% stars 30s+ tak intact — probe se verify).
+            presets.galaxy = (() => {
+                const center = { x: 0, y: 0, vx: 0, vy: 0, mass: 30000, color: '#ffeb3b' };
+                const stars = [center];
+                for (let i = 0; i < 50; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const radius = 120 + Math.random() * 380;
+                    const x = Math.cos(angle) * radius;
+                    const y = Math.sin(angle) * radius;
+                    const speed = Math.sqrt(params.gravConst * center.mass / radius);
+                    stars.push({
+                        x, y,
+                        vx: -Math.sin(angle) * speed,
+                        vy: Math.cos(angle) * speed,
+                        mass: 2 + Math.random() * 6,
+                        color: `hsl(${Math.random() * 60 + 180}, 100%, 70%)`
+                    });
+                }
+                return stars;
+            })();
+
+            const preset = presets[name];
+            if (!preset) return;
+
+            // BUGFIX: bodies ko validate hone ke BAAD clear karo, aur
+            // gravConst reset upar ja chuka hai (galaxy velocity fix).
+            bodies = [];
+            for (const p of preset) {
+                bodies.push(new Body(p.x, p.y, p.vx, p.vy, p.mass, p.color));
+            }
+
+            // Auto-center camera
+            centerView();
+            zoom = 1;
+            updateBodyList();
+            lastTime = Date.now(); // avoid a huge dt spike from stale lastTime on next frame
+            if (window.innerWidth <= 768) closeSidebar();
+        }
+
+        // ==============================================
+        // VIEW CONTROLS
+        // ==============================================
+        function togglePause() {
+            isPaused = !isPaused;
+            const btn = document.getElementById('pauseBtn');
+            btn.innerHTML = isPaused
+                ? '<i class="fa-solid fa-play"></i>&nbsp; Resume'
+                : '<i class="fa-solid fa-pause"></i>&nbsp; Pause';
+        }
+
+        function clearBodies() {
+            bodies = [];
+            updateBodyList();
+        }
+
+        function centerView() {
+            if (bodies.length === 0) {
+                cameraX = 0; cameraY = 0;
+                return;
+            }
+            let totalMass = 0, cx = 0, cy = 0;
+            for (const b of bodies) {
+                cx += b.x * b.mass;
+                cy += b.y * b.mass;
+                totalMass += b.mass;
+            }
+            cameraX = cx / totalMass;
+            cameraY = cy / totalMass;
+        }
+
+        function resetCamera() {
+            cameraX = 0;
+            cameraY = 0;
+            zoom = 1;
+        }
+
+        // ==============================================
+        // TOUCH & MOUSE INPUT (Pan / Zoom / Tap)
+        // ==============================================
+        let touchStartX = 0, touchStartY = 0;
+        let touchStartTime = 0;
+        let pinchStartDist = 0;
+        let pinchStartZoom = 1;
+        let isPanning = false;
+        let panStartCamX = 0, panStartCamY = 0;
+        let hasMoved = false;
+
+        function getTouchDist(t1, t2) {
+            const dx = t1.clientX - t2.clientX;
+            const dy = t1.clientY - t2.clientY;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        // --- Touch events ---
+        canvas.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) {
+                const t = e.touches[0];
+                touchStartX = t.clientX;
+                touchStartY = t.clientY;
+                touchStartTime = Date.now();
+                panStartCamX = cameraX;
+                panStartCamY = cameraY;
+                isPanning = true;
+                hasMoved = false;
+            } else if (e.touches.length === 2) {
+                isPanning = false;
+                pinchStartDist = getTouchDist(e.touches[0], e.touches[1]);
+                pinchStartZoom = zoom;
+            }
+        }, { passive: true });
+
+        canvas.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 1 && isPanning) {
+                const t = e.touches[0];
+                const dx = t.clientX - touchStartX;
+                const dy = t.clientY - touchStartY;
+                if (Math.abs(dx) > 5 || Math.abs(dy) > 5) hasMoved = true;
+                cameraX = panStartCamX - dx / zoom;
+                cameraY = panStartCamY - dy / zoom;
+            } else if (e.touches.length === 2) {
+                e.preventDefault();
+                hasMoved = true;
+                const dist = getTouchDist(e.touches[0], e.touches[1]);
+                if (pinchStartDist > 0) {
+                    zoom = Math.max(0.1, Math.min(5, pinchStartZoom * (dist / pinchStartDist)));
+                }
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', (e) => {
+            // BUGFIX: pinch ke baad 2->1 ungli transition:
+            //  (a) pan reference ko bachi hui ungli par rebase karo
+            //      (warna camera jump karta tha), aur
+            //  (b) hasMoved=true rakho — pehle doosra touchend "tap"
+            //      samajh kar add-mode me accidentally body add kar deta tha.
+            if (e.touches.length === 1) {
+                pinchStartDist = 0;
+                const t = e.touches[0];
+                touchStartX = t.clientX;
+                touchStartY = t.clientY;
+                panStartCamX = cameraX;
+                panStartCamY = cameraY;
+                isPanning = true;
+                hasMoved = true;
+                return;
+            }
+            if (e.touches.length > 1) return; // abhi ungliyan down hain
+
+            isPanning = false;
+            const wasTap = !hasMoved && (Date.now() - touchStartTime) < 300;
+
+            if (wasTap && e.changedTouches.length === 1 && addMode) {
+                const t = e.changedTouches[0];
+                const rect = canvas.getBoundingClientRect();
+                addBody(t.clientX - rect.left, t.clientY - rect.top);
+                addBodyMode(); // toggle off
+            }
+            pinchStartDist = 0;
+            hasMoved = false;
+        }, { passive: true });
+
+        // --- Mouse events ---
+        let mouseDown = false;
+        let mouseStartX = 0, mouseStartY = 0;
+        let mouseStartCamX = 0, mouseStartCamY = 0;
+        let mouseMoved = false;
+
+        canvas.addEventListener('mousedown', (e) => {
+            if (e.button !== 0) return;
+            mouseDown = true;
+            mouseStartX = e.clientX;
+            mouseStartY = e.clientY;
+            mouseStartCamX = cameraX;
+            mouseStartCamY = cameraY;
+            mouseMoved = false;
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!mouseDown) return;
+            const dx = e.clientX - mouseStartX;
+            const dy = e.clientY - mouseStartY;
+            if (Math.abs(dx) > 3 || Math.abs(dy) > 3) mouseMoved = true;
+            cameraX = mouseStartCamX - dx / zoom;
+            cameraY = mouseStartCamY - dy / zoom;
+        });
+
+        canvas.addEventListener('mouseup', (e) => {
+            if (!mouseDown) return;
+            mouseDown = false;
+            if (!mouseMoved && addMode) {
+                const rect = canvas.getBoundingClientRect();
+                addBody(e.clientX - rect.left, e.clientY - rect.top);
+                addBodyMode(); // toggle off
+            }
+        });
+
+        // BUGFIX: safety net jab mouse canvas ke BAHAR release ho.
+        // Pehle mouseDown=true reh jata tha aur button chhodne ke baad
+        // bhi hover par camera pan hota rehta tha (stuck drag).
+        // Body placement upar wala canvas-mouseup hi karta hai; ye sirf
+        // drag state clear karta hai.
+        window.addEventListener('mouseup', () => {
+            mouseDown = false;
+        });
+
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+            zoom = Math.max(0.1, Math.min(5, zoom * factor));
+        }, { passive: false });
+
+        // Prevent default touch scrolling on canvas
+        canvas.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 2) e.preventDefault();
+        }, { passive: false });
+
+        // ==============================================
+        // SIDEBAR (Mobile)
+        // ==============================================
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        const menuToggle = document.getElementById('menu-toggle');
+
+        function openSidebar() {
+            sidebar.classList.add('open');
+            overlay.classList.add('open');
+        }
+        function closeSidebar() {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('open');
+        }
+        function toggleSidebar() {
+            if (sidebar.classList.contains('open')) closeSidebar();
+            else openSidebar();
+        }
+
+        menuToggle.addEventListener('click', toggleSidebar);
+        overlay.addEventListener('click', closeSidebar);
+
+        // ==============================================
+        // UI BINDINGS
+        // ==============================================
+        const sliderSteps = {
+            mass: 1,
+            velX: 1,
+            velY: 1,
+            gravConst: 1,
+            timeSpeed: 0.1,
+            trailLength: 1
+        };
+
+        // Typed values ke liye limits (slider min/max ke barabar)
+        const paramLimits = {
+            mass:        { min: 1,    max: 100000 },
+            velX:        { min: -500, max: 500 },
+            velY:        { min: -500, max: 500 },
+            gravConst:   { min: 10,   max: 500 },
+            timeSpeed:   { min: 0.1,  max: 5 },
+            trailLength: { min: 0,    max: 200, integer: true }
+        };
+
+        // Value ko clean string me format karo — DECIMALS preserve rehte hain.
+        // (pehle Math.round() ki wajah se 223.6 jaisi typed values display
+        // me 224 ban jatin)
+        function formatParamValue(id, v) {
+            if (id === 'timeSpeed') {
+                const r = Math.round(v * 100) / 100;
+                return Number.isInteger(r) ? r.toFixed(1) : String(r);
+            }
+            return String(Math.round(v * 1000) / 1000);
+        }
+
+        function clampParam(id, v) {
+            const lim = paramLimits[id];
+            if (lim.integer) v = Math.round(v);
+            v = Math.round(v * 1000) / 1000; // floating point noise saaf karo
+            return Math.min(lim.max, Math.max(lim.min, v));
+        }
+
+        function updateSliderDisplay(id, v) {
+            document.getElementById(id + 'Val').value = formatParamValue(id, v);
+        }
+
+        ['mass', 'velX', 'velY', 'gravConst', 'timeSpeed', 'trailLength'].forEach(id => {
+            const el = document.getElementById(id);            // range slider
+            const valEl = document.getElementById(id + 'Val'); // editable value box
+
+            // Slider drag
+            el.addEventListener('input', (e) => {
+                const v = parseFloat(e.target.value);
+                if (isNaN(v)) return;
+                params[id] = v;
+                updateSliderDisplay(id, v);
+            });
+
+            // TYPE karke value — decimals (223.6) fully supported
+            valEl.addEventListener('input', () => {
+                const raw = valEl.value.trim();
+                // Adhuri typing ('-', '.', '-.') par wait karo
+                if (raw === '' || raw === '-' || raw === '.' || raw === '-.') return;
+                const v = parseFloat(raw);
+                if (!isFinite(v)) return;
+                params[id] = clampParam(id, v);
+                el.value = params[id]; // slider thumb sync
+            });
+
+            // Enter / blur par commit: clamp + clean format
+            const commit = () => {
+                let v = parseFloat(valEl.value);
+                if (!isFinite(v)) v = params[id]; // khali/garbage → purani value
+                v = clampParam(id, v);
+                params[id] = v;
+                el.value = v;
+                updateSliderDisplay(id, v);
+            };
+            valEl.addEventListener('change', commit);
+            valEl.addEventListener('keydown', (e) => {
+                e.stopPropagation(); // global shortcuts (space/c/r) field ke andar na chalein
+                if (e.key === 'Enter') valEl.blur();
+            });
+        });
+
+        document.querySelectorAll('.stepper-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.dataset.target;
+                const dir = parseInt(btn.dataset.dir, 10);
+                const el = document.getElementById(id);
+                const step = sliderSteps[id] || 1;
+                // Base ab params se lo (slider se nahi) — typed decimal
+                // values (jaise 223.6) par stepper +1 = 224.6 sahi chale
+                let v = (parseFloat(params[id]) || 0) + dir * step;
+                v = clampParam(id, v);
+                el.value = v;
+                params[id] = v;
+                updateSliderDisplay(id, v);
+            });
+        });
+
+        document.getElementById('bodyColor').addEventListener('input', (e) => {
+            params.bodyColor = e.target.value;
+        });
+        document.getElementById('collisions').addEventListener('change', (e) => {
+            params.collisions = e.target.checked;
+        });
+        document.getElementById('showVectors').addEventListener('change', (e) => {
+            params.showVectors = e.target.checked;
+        });
+
+        // Position X/Y bhare hue hon to body direct wahan add ho;
+        // dono khali hon to pehle jaisa canvas-tap mode.
+        const posXEl = document.getElementById('posX');
+        const posYEl = document.getElementById('posY');
+
+        document.getElementById('addBodyBtn').addEventListener('click', () => {
+            const rx = posXEl.value.trim(), ry = posYEl.value.trim();
+            const x = parseFloat(rx), y = parseFloat(ry);
+
+            if ((rx !== '') !== (ry !== '')) {
+                showHint('<i class="fa-solid fa-triangle-exclamation"></i>&nbsp; Fill both X and Y — or leave both empty to tap-place');
+                setTimeout(hideHint, 2000);
+                return;
+            }
+            if (rx !== '' && ry !== '' && isFinite(x) && isFinite(y)) {
+                bodies.push(new Body(x, y, params.velX, params.velY, params.mass, params.bodyColor));
+                updateBodyList();
+                posXEl.value = '';
+                posYEl.value = '';
+                showHint('<i class="fa-solid fa-circle-plus"></i>&nbsp; Body added at (' +
+                    (Math.round(x * 100) / 100) + ', ' + (Math.round(y * 100) / 100) + ')');
+                setTimeout(hideHint, 1500);
+                if (window.innerWidth <= 768) closeSidebar();
+                return;
+            }
+            addBodyMode();
+        });
+        document.getElementById('pauseBtn').addEventListener('click', togglePause);
+        document.getElementById('clearBtn').addEventListener('click', clearBodies);
+        document.getElementById('centerBtn').addEventListener('click', centerView);
+        document.getElementById('resetCamBtn').addEventListener('click', resetCamera);
+
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => loadPreset(btn.dataset.preset));
+        });
+
+        // Keyboard shortcuts
+        window.addEventListener('keydown', (e) => {
+            const tag = ((e.target && e.target.tagName) || '').toLowerCase();
+            const typing = (tag === 'input' || tag === 'textarea' || tag === 'select');
+            if (e.key === 'Escape') {
+                if (typing && e.target.blur) e.target.blur();
+                if (addMode) addBodyMode();
+                closeSidebar();
+                return;
+            }
+            // Value/position fields me type karte waqt shortcuts fire na hon
+            // (warna 'c'/'r'/space type karna impossible ho jata)
+            if (typing) return;
+            if (e.key === ' ') { e.preventDefault(); togglePause(); }
+            if (e.key.toLowerCase() === 'c') centerView();
+            if (e.key.toLowerCase() === 'r') resetCamera();
+        });
+
+        // ==============================================
+        // RESIZE
+        // ==============================================
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(resizeCanvas, 100);
+        });
+        window.addEventListener('orientationchange', () => {
+            setTimeout(resizeCanvas, 200);
+        });
+
+        // ==============================================
+        // INIT
+        // ==============================================
+        // Wait for DOM to be fully ready.
+        // BUGFIX: guarded init — agar DOMContentLoaded aur fallback dono
+        // somehow fire ho jayen to do rAF loops na chal parein (warna
+        // physics + render har frame double speed me chalta).
+        let simStarted = false;
+        function init() {
+            if (simStarted) return;
+            simStarted = true;
+            resizeCanvas();
+            loadPreset('solar');
+            requestAnimationFrame(update);
+        }
+        window.addEventListener('DOMContentLoaded', init);
+        // Fallback if DOMContentLoaded already fired
+        if (document.readyState !== 'loading') {
+            setTimeout(init, 0);
+        }
+        // Small intro hint
+        setTimeout(() => {
+            showHint('<i class="fa-solid fa-sun"></i>&nbsp; Solar system loaded — try presets!');
+            setTimeout(hideHint, 3000);
+        }, 500);
+    </script>
+</body>
+</html>
