@@ -1,0 +1,1529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#0a1628" />
+<title>Physics Lab — RochTools</title>
+<meta name="description" content="Interactive physics simulator — free fall, projectile, collision, pendulum, spring and orbit. Runs entirely in your browser." />
+
+<link rel="icon" type="image/png" sizes="192x192" href="/tool/icons/icon-192x192.png">
+<link rel="apple-touch-icon" href="/tool/icons/apple-touch-icon.png">
+<link rel="manifest" href="/tool/manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="RochTools">
+
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" />
+
+<style>
+    :root {
+        --blue: #0047FF;
+        --blue-light: #4d7fff;
+        --blue-glow: rgba(0, 71, 255, 0.5);
+        --blue-dim: rgba(0, 71, 255, 0.15);
+        --bg: #0a1628;
+        --bg-2: #0f1e33;
+        --bg-3: #152540;
+        --surface: rgba(255, 255, 255, 0.03);
+        --surface-2: rgba(255, 255, 255, 0.06);
+        --border: rgba(255, 255, 255, 0.08);
+        --border-hi: rgba(77, 127, 255, 0.3);
+        --text: #e8eef7;
+        --muted: #7a8ba3;
+        --green: #10b981;
+        --amber: #f59e0b;
+        --red: #ef4444;
+        --pink: #ec4899;
+        --radius-sm: 10px;
+        --radius: 14px;
+        --radius-lg: 18px;
+        --font-mono: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace;
+        --nav-h: 60px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html {
+        height: 100%;
+    }
+    body {
+        overflow-x: hidden;
+        width: 100%;
+    }
+    body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        min-height: 100vh;
+        padding-top: var(--nav-h);
+    }
+
+    /* ── NAVBAR (RochTools style) ── */
+    .nav {
+        background: rgba(10, 22, 40, 0.92);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-bottom: 1px solid var(--border);
+        padding: 10px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        position: fixed;
+        top: 0; left: 0; right: 0;
+        z-index: 1000;
+        height: var(--nav-h);
+    }
+    .nav-logo {
+        display: flex; align-items: center; gap: 10px;
+        text-decoration: none; flex-shrink: 0; margin-right: auto;
+    }
+    .nav-logo-icon {
+        width: 38px; height: 38px;
+        background: linear-gradient(135deg, var(--blue) 0%, #0040e0 100%);
+        border-radius: var(--radius-sm);
+        display: flex; align-items: center; justify-content: center;
+        color: white; font-size: 16px;
+        box-shadow: 0 4px 14px var(--blue-glow);
+    }
+    .nav-logo-text {
+        font-size: 18px; font-weight: 800;
+        color: var(--blue-light); letter-spacing: -0.5px;
+    }
+    .nav-logo-text span { color: var(--text); font-weight: 600; }
+    .nav-back {
+        display: flex; align-items: center; gap: 6px;
+        background: var(--surface); color: var(--text);
+        border: 1px solid var(--border);
+        padding: 8px 14px; border-radius: var(--radius-sm);
+        cursor: pointer;
+        font-family: inherit; font-size: 12px; font-weight: 600;
+        text-decoration: none;
+        transition: all 0.25s;
+        flex-shrink: 0;
+    }
+    .nav-back:hover {
+        background: var(--blue); color: white;
+        border-color: var(--blue);
+    }
+
+    /* ── PAGE ── */
+    .page {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 16px;
+        display: grid;
+        gap: 14px;
+    }
+    .sim-area {
+        position: sticky;
+        top: var(--nav-h);
+        z-index: 10;
+        align-self: start;
+        background: var(--bg);
+        padding-bottom: 6px;
+    }
+    @media (min-width: 1024px) {
+        .page {
+            grid-template-columns: 1fr 320px;
+            padding: 20px;
+        }
+        .sim-area { grid-column: 1; grid-row: 1; }
+        .controls-area { grid-column: 2; grid-row: 1; }
+        .info-box { grid-column: 1 / -1; grid-row: 2; }
+    }
+
+    /* ── HERO ── */
+    .hero {
+        padding: 4px 2px 12px;
+    }
+    .hero h1 {
+        font-size: clamp(20px, 4.5vw, 28px);
+        font-weight: 800; letter-spacing: -0.6px;
+        line-height: 1.2;
+    }
+    .hero h1 .blue { color: var(--blue-light); }
+    .hero p {
+        font-size: 12px; color: var(--muted);
+        margin-top: 4px; font-weight: 500;
+    }
+
+    /* ── CARD ── */
+    .card {
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+    }
+    .card-head {
+        padding: 12px 14px;
+        display: flex; align-items: center; gap: 8px;
+        border-bottom: 1px solid var(--border);
+        font-size: 13px; font-weight: 700;
+    }
+    .card-head i { color: var(--blue-light); }
+
+    /* ── CANVAS ── */
+    .canvas-wrap {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 16 / 10;
+        min-height: 260px;
+        max-height: 62vh;
+        background: radial-gradient(ellipse at center, #0d1a30 0%, #061020 100%);
+    }
+    #physics-canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+        touch-action: pan-y;
+        cursor: crosshair;
+    }
+
+    /* ── STATS BAR (below canvas) ── */
+    .stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        border-top: 1px solid var(--border);
+        background: var(--bg-2);
+    }
+    .stat {
+        padding: 4px 4px;
+        text-align: center;
+        border-right: 1px solid var(--border);
+    }
+    .stat:last-child { border-right: none; }
+    .stat-label {
+        font-size: 7px; color: var(--muted);
+        text-transform: uppercase; letter-spacing: 0.4px;
+        font-weight: 600;
+    }
+    .stat-value {
+        font-size: 10px;
+        color: var(--blue-light); font-weight: 800;
+        margin-top: 1px;
+        font-variant-numeric: tabular-nums;
+    }
+    @media (max-width: 380px) {
+        .stat-value { font-size: 9px; }
+        .stat-label { font-size: 6px; }
+    }
+
+    /* ── TOP CONTROLS ── */
+    .top-controls {
+        display: flex;
+        gap: 8px;
+        padding: 10px 14px;
+        border-top: 1px solid var(--border);
+        background: var(--bg-2);
+    }
+    .btn {
+        flex: 1;
+        padding: 10px 12px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text);
+        font-family: inherit;
+        font-size: 12px; font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex; align-items: center; justify-content: center; gap: 6px;
+        white-space: nowrap;
+    }
+    .btn:hover:not(:disabled) {
+        background: var(--surface-2);
+        border-color: var(--border-hi);
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn.primary {
+        background: var(--blue); color: white; border-color: var(--blue);
+        box-shadow: 0 4px 14px var(--blue-glow);
+    }
+    .btn.primary:hover { background: #0035cc; }
+    .btn.danger { color: var(--red); }
+    .btn.danger:hover {
+        background: rgba(239, 68, 68, 0.1);
+        border-color: rgba(239, 68, 68, 0.3);
+    }
+
+    /* ── SIDEBAR CONTROLS ── */
+    .controls-area {
+        display: grid;
+        gap: 14px;
+        align-content: start;
+        min-width: 0;
+    }
+
+    .section {
+        min-width: 0;
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 14px;
+    }
+    .section-title {
+        font-size: 11px;
+        font-weight: 800;
+        color: var(--blue-light);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 12px;
+        display: flex; align-items: center; gap: 7px;
+    }
+    .section-title i { font-size: 12px; }
+
+    /* Mode buttons grid */
+    .modes {
+        display: flex;
+        gap: 6px;
+        width: 100%;
+        min-width: 0;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        padding-bottom: 4px;
+    }
+    .modes::-webkit-scrollbar { height: 4px; }
+    .mode-btn {
+        padding: 8px 4px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text);
+        font-family: inherit;
+        font-size: 9px; font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex; flex-direction: column;
+        align-items: center; gap: 4px;
+        text-align: center;
+        line-height: 1.1;
+        flex: 1 0 auto;
+        min-width: 54px;
+        white-space: nowrap;
+    }
+    .mode-btn span br { display: none; }
+    .mode-btn i { font-size: 13px; color: var(--muted); transition: color 0.2s; }
+    .mode-btn:hover {
+        background: var(--surface-2);
+        border-color: var(--border-hi);
+    }
+    .mode-btn.active {
+        background: linear-gradient(135deg, var(--blue) 0%, #0035cc 100%);
+        border-color: var(--blue);
+        color: white;
+        box-shadow: 0 4px 14px var(--blue-glow);
+    }
+    .mode-btn.active i { color: white; }
+
+    /* Sliders */
+    .ctrl {
+        margin-bottom: 12px;
+    }
+    .ctrl:last-child { margin-bottom: 0; }
+    .ctrl-head {
+        display: flex; justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 6px;
+    }
+    .ctrl-label {
+        font-size: 11px;
+        color: var(--muted);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+    }
+    .ctrl-value {
+        font-size: 12px;
+        color: var(--blue-light);
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+    }
+    input[type="range"] {
+        width: 100%;
+        height: 4px;
+        border-radius: 2px;
+        background: var(--surface-2);
+        outline: none;
+        -webkit-appearance: none;
+        appearance: none;
+        cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 16px; height: 16px;
+        border-radius: 50%;
+        background: var(--blue-light);
+        cursor: pointer;
+        border: 2px solid var(--bg-2);
+        box-shadow: 0 0 0 3px var(--blue-dim);
+        transition: transform 0.15s;
+    }
+    input[type="range"]::-webkit-slider-thumb:active {
+        transform: scale(1.15);
+    }
+    input[type="range"]::-moz-range-thumb {
+        width: 16px; height: 16px;
+        border-radius: 50%;
+        background: var(--blue-light);
+        cursor: pointer;
+        border: 2px solid var(--bg-2);
+        box-shadow: 0 0 0 3px var(--blue-dim);
+    }
+
+    /* Toggle switch */
+    .toggle-row {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 8px 0;
+    }
+    .toggle-row + .toggle-row { border-top: 1px solid var(--border); }
+    .toggle-label {
+        font-size: 12px;
+        color: var(--text);
+        font-weight: 600;
+    }
+    .toggle {
+        position: relative;
+        width: 40px; height: 22px;
+        background: var(--surface-2);
+        border-radius: 100px;
+        cursor: pointer;
+        transition: background 0.2s;
+        flex-shrink: 0;
+    }
+    .toggle::after {
+        content: '';
+        position: absolute;
+        top: 3px; left: 3px;
+        width: 16px; height: 16px;
+        background: var(--muted);
+        border-radius: 50%;
+        transition: all 0.2s;
+    }
+    .toggle.on { background: var(--blue); }
+    .toggle.on::after {
+        background: white;
+        transform: translateX(18px);
+    }
+
+    /* Pill select */
+    .pills {
+        display: flex;
+        gap: 4px;
+        background: var(--surface);
+        padding: 3px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border);
+    }
+    .pill {
+        flex: 1;
+        padding: 6px 4px;
+        border: none;
+        background: transparent;
+        color: var(--muted);
+        font-family: inherit;
+        font-size: 10px; font-weight: 700;
+        border-radius: 7px;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+    }
+    .pill.active {
+        background: var(--blue);
+        color: white;
+        box-shadow: 0 2px 8px var(--blue-glow);
+    }
+
+    /* ── INFO ── */
+    .info-box {
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 16px;
+        margin-top: 14px;
+    }
+    .info-box h3 {
+        font-size: 13px; font-weight: 700;
+        margin-bottom: 10px;
+        display: flex; align-items: center; gap: 7px;
+    }
+    .info-box h3 i { color: var(--blue-light); }
+    .info-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+    .info-item {
+        background: var(--surface);
+        border-radius: var(--radius-sm);
+        padding: 10px 12px;
+    }
+    .info-item-title {
+        font-size: 10px;
+        color: var(--blue-light);
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        margin-bottom: 3px;
+    }
+    .info-item-text {
+        font-size: 11px;
+        color: var(--muted);
+        line-height: 1.5;
+    }
+
+    /* ── MOBILE ── */
+    @media (max-width: 1023px) {
+        .page {
+            grid-template-columns: minmax(0, 1fr);
+        }
+        .canvas-wrap {
+            max-height: 45vh;
+            min-height: 220px;
+            aspect-ratio: auto;
+            height: 45vh;
+        }
+    }
+    @media (max-width: 480px) {
+        :root { --nav-h: 56px; }
+        .nav { padding: 8px 12px; }
+        .nav-logo-icon { width: 34px; height: 34px; font-size: 14px; }
+        .nav-logo-text { font-size: 16px; }
+        .nav-back { padding: 7px 12px; font-size: 11px; }
+        .page { padding: 12px; gap: 10px; }
+        .card-head { padding: 10px 12px; font-size: 12px; }
+        .section { padding: 12px; }
+        .top-controls { padding: 8px 10px; gap: 6px; }
+        .btn { padding: 9px 8px; font-size: 11px; }
+        .info-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ── Safe area ── */
+    @supports (padding: env(safe-area-inset-bottom)) {
+        body { padding-bottom: env(safe-area-inset-bottom); }
+    }
+
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--border-hi); }
+    ::selection { background: var(--blue); color: white; }
+</style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="nav">
+    <a href="/tool/index.html" class="nav-logo">
+        <div class="nav-logo-icon"><i class="fa-solid fa-bolt"></i></div>
+        <span class="nav-logo-text">Roch<span>Tools</span></span>
+    </a>
+    <a href="/tool/index.html" class="nav-back">
+        <i class="fa-solid fa-arrow-left"></i> Tools
+    </a>
+</nav>
+
+<div class="page">
+
+    <!-- ─── SIMULATION ─── -->
+    <div class="sim-area">
+        <div class="hero">
+            <h1>Physics <span class="blue">Lab</span></h1>
+        </div>
+
+        <div class="card">
+            <div class="card-head">
+                <i class="fa-solid fa-flask"></i>
+                <span id="simTitle">Free Fall</span>
+            </div>
+
+            <div class="canvas-wrap">
+                <canvas id="physics-canvas"></canvas>
+            </div>
+
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-label">Objects</div>
+                    <div class="stat-value" id="statObjects">0</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Energy</div>
+                    <div class="stat-value" id="statEnergy">0</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Momentum</div>
+                    <div class="stat-value" id="statMomentum">0</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Time</div>
+                    <div class="stat-value" id="statTime">0.0s</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ─── CONTROLS SIDEBAR ─── -->
+    <div class="controls-area">
+
+        <!-- PLAYBACK CONTROLS -->
+        <div class="section">
+            <div class="top-controls" style="padding:0; border-top:none;">
+                <button class="btn primary" id="playBtn">
+                    <i class="fa-solid fa-play"></i> <span>Play</span>
+                </button>
+                <button class="btn" id="resetBtn">
+                    <i class="fa-solid fa-rotate-right"></i> Reset
+                </button>
+                <button class="btn danger" id="clearBtn">
+                    <i class="fa-solid fa-trash"></i> Clear
+                </button>
+            </div>
+        </div>
+
+        <!-- MODES -->
+        <div class="section">
+            <div class="section-title">
+                <i class="fa-solid fa-grip"></i> Mode
+            </div>
+            <div class="modes" id="modesGrid">
+                <button class="mode-btn active" data-sim="freefall">
+                    <i class="fa-solid fa-arrow-down"></i>
+                    <span>Free<br>Fall</span>
+                </button>
+                <button class="mode-btn" data-sim="projectile">
+                    <i class="fa-solid fa-bullseye"></i>
+                    <span>Proj.</span>
+                </button>
+                <button class="mode-btn" data-sim="collision">
+                    <i class="fa-solid fa-bolt"></i>
+                    <span>Collide</span>
+                </button>
+                <button class="mode-btn" data-sim="pendulum">
+                    <i class="fa-solid fa-clock"></i>
+                    <span>Pendulum</span>
+                </button>
+                <button class="mode-btn" data-sim="spring">
+                    <i class="fa-solid fa-wave-square"></i>
+                    <span>Spring</span>
+                </button>
+                <button class="mode-btn" data-sim="orbit">
+                    <i class="fa-solid fa-circle-dot"></i>
+                    <span>Orbit</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- PHYSICS PARAMETERS -->
+        <div class="section">
+            <div class="section-title">
+                <i class="fa-solid fa-sliders"></i> Physics
+            </div>
+
+            <div class="ctrl">
+                <div class="ctrl-head">
+                    <span class="ctrl-label">Gravity</span>
+                    <span class="ctrl-value" id="gravityVal">9.8</span>
+                </div>
+                <input type="range" id="gravity" min="0" max="30" step="0.1" value="9.8">
+            </div>
+
+            <div class="ctrl">
+                <div class="ctrl-head">
+                    <span class="ctrl-label">Air Resistance</span>
+                    <span class="ctrl-value" id="dragVal">0.00</span>
+                </div>
+                <input type="range" id="drag" min="0" max="1" step="0.01" value="0">
+            </div>
+
+            <div class="ctrl">
+                <div class="ctrl-head">
+                    <span class="ctrl-label">Elasticity</span>
+                    <span class="ctrl-value" id="elasticityVal">0.80</span>
+                </div>
+                <input type="range" id="elasticity" min="0" max="1" step="0.05" value="0.8">
+            </div>
+
+            <div class="ctrl">
+                <div class="ctrl-head">
+                    <span class="ctrl-label">Time Scale</span>
+                    <span class="ctrl-value" id="timeScaleVal">1.0×</span>
+                </div>
+                <input type="range" id="timeScale" min="0.1" max="3" step="0.1" value="1">
+            </div>
+        </div>
+
+        <!-- OBJECT PROPERTIES -->
+        <div class="section">
+            <div class="section-title">
+                <i class="fa-solid fa-cube"></i> Object
+            </div>
+
+            <div class="ctrl">
+                <div class="ctrl-head">
+                    <span class="ctrl-label">Mass</span>
+                    <span class="ctrl-value" id="massVal">5 kg</span>
+                </div>
+                <input type="range" id="mass" min="1" max="20" step="1" value="5">
+            </div>
+
+            <div class="ctrl">
+                <div class="ctrl-head">
+                    <span class="ctrl-label">Size</span>
+                    <span class="ctrl-value" id="sizeVal">20 px</span>
+                </div>
+                <input type="range" id="size" min="8" max="50" step="1" value="20">
+            </div>
+
+            <div class="ctrl">
+                <div class="ctrl-head">
+                    <span class="ctrl-label">Launch Speed</span>
+                    <span class="ctrl-value" id="speedVal">15 m/s</span>
+                </div>
+                <input type="range" id="speed" min="5" max="50" step="1" value="15">
+            </div>
+
+            <div class="ctrl">
+                <div class="ctrl-head">
+                    <span class="ctrl-label">Launch Angle</span>
+                    <span class="ctrl-value" id="angleVal">45°</span>
+                </div>
+                <input type="range" id="angle" min="0" max="90" step="1" value="45">
+            </div>
+        </div>
+
+        <!-- DISPLAY -->
+        <div class="section">
+            <div class="section-title">
+                <i class="fa-solid fa-eye"></i> Display
+            </div>
+
+            <div class="ctrl" style="margin-bottom:10px">
+                <div class="ctrl-head">
+                    <span class="ctrl-label">Vectors</span>
+                </div>
+                <div class="pills" id="vectorPills">
+                    <button class="pill" data-val="none">None</button>
+                    <button class="pill" data-val="velocity">Vel</button>
+                    <button class="pill" data-val="force">Force</button>
+                    <button class="pill active" data-val="both">Both</button>
+                </div>
+            </div>
+
+            <div class="ctrl" style="margin-bottom:10px">
+                <div class="ctrl-head">
+                    <span class="ctrl-label">Trails</span>
+                </div>
+                <div class="pills" id="trailPills">
+                    <button class="pill" data-val="none">Off</button>
+                    <button class="pill" data-val="short">S</button>
+                    <button class="pill active" data-val="medium">M</button>
+                    <button class="pill" data-val="long">L</button>
+                </div>
+            </div>
+
+            <div class="toggle-row">
+                <span class="toggle-label">Show Grid</span>
+                <div class="toggle on" id="gridToggle"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ─── HOW TO USE (always last) ─── -->
+    <div class="info-box">
+        <h3><i class="fa-solid fa-circle-info"></i> How to use</h3>
+        <div class="info-grid">
+            <div class="info-item">
+                <div class="info-item-title">Pick a Mode</div>
+                <div class="info-item-text">Choose Free Fall, Projectile, Collision, Pendulum, Spring or Orbit from the modes panel.</div>
+            </div>
+            <div class="info-item">
+                <div class="info-item-title">Adjust Physics</div>
+                <div class="info-item-text">Fine-tune gravity, air resistance, elasticity and time scale. Changes apply instantly.</div>
+            </div>
+            <div class="info-item">
+                <div class="info-item-title">Tap Canvas</div>
+                <div class="info-item-text">Tap anywhere on the canvas to spawn a new object. Great for building your own experiments.</div>
+            </div>
+            <div class="info-item">
+                <div class="info-item-title">Keyboard</div>
+                <div class="info-item-text">Space = play/pause · R = reset · C = clear · 1–6 = switch mode</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+// ══════════════════════════════════════════════
+// CANVAS SETUP (HiDPI aware)
+// ══════════════════════════════════════════════
+const canvas = document.getElementById('physics-canvas');
+const ctx = canvas.getContext('2d');
+let W = 0, H = 0, DPR = 1;
+
+function resizeCanvas() {
+    const rect = canvas.parentElement.getBoundingClientRect();
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = rect.width;
+    H = rect.height;
+    canvas.width = Math.round(W * DPR);
+    canvas.height = Math.round(H * DPR);
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+    // Bring objects back inside if they were outside
+    objects.forEach(o => {
+        o.x = Math.min(Math.max(o.radius, o.x), W - o.radius);
+        o.y = Math.min(Math.max(o.radius, o.y), H - o.radius);
+    });
+}
+
+// ══════════════════════════════════════════════
+// SETTINGS (single source of truth)
+// ══════════════════════════════════════════════
+const settings = {
+    gravity: 9.8,
+    drag: 0,
+    elasticity: 0.8,
+    timeScale: 1,
+    mass: 5,
+    size: 20,
+    speed: 15,
+    angle: 45,
+    vectors: 'both',
+    trails: 'medium',
+    grid: true,
+    mode: 'freefall'
+};
+
+// Pixels per meter — for consistent physics across screen sizes
+const PPM = 8; // 8 pixels = 1 meter
+
+// ══════════════════════════════════════════════
+// PHYSICS OBJECT
+// ══════════════════════════════════════════════
+class Body {
+    constructor(x, y, vx, vy, mass, radius, opts = {}) {
+        this.x = x; this.y = y;
+        this.vx = vx; this.vy = vy;
+        this.mass = mass;
+        this.radius = radius;
+        this.trail = [];
+        this.color = opts.color || `hsl(${(Math.random() * 360) | 0}, 75%, 62%)`;
+        this.isStatic = !!opts.isStatic;
+        this.type = opts.type || 'body';
+
+        // Type-specific
+        if (opts.pivotX !== undefined) {
+            this.pivotX = opts.pivotX;
+            this.pivotY = opts.pivotY;
+            this.length = opts.length;
+            this.angle = opts.angle ?? 0;
+            this.angularVel = 0;
+        }
+        if (opts.anchorY !== undefined) {
+            this.anchorY = opts.anchorY;
+            this.restLength = opts.restLength;
+            this.springK = opts.springK;
+        }
+    }
+}
+
+let objects = [];
+let isPlaying = false;
+let simTime = 0;
+
+// ══════════════════════════════════════════════
+// COLOR RESET (fresh random per reset)
+// ══════════════════════════════════════════════
+function makeColor(hue) {
+    return `hsl(${hue}, 75%, 62%)`;
+}
+
+// ══════════════════════════════════════════════
+// SIMULATION SETUP
+// ══════════════════════════════════════════════
+function setupSimulation(mode) {
+    objects = [];
+    simTime = 0;
+
+    const m = settings.mass;
+    const r = settings.size;
+    const g = settings.gravity;
+
+    switch (mode) {
+        case 'freefall': {
+            const b = new Body(W / 2, Math.max(60, H * 0.15), 0, 0, m, r);
+            objects.push(b);
+            break;
+        }
+
+        case 'projectile': {
+            const speed = settings.speed;
+            const ang = settings.angle * Math.PI / 180;
+            // Real units: m/s → px/s (PPM)
+            const vx = speed * Math.cos(ang) * PPM;
+            const vy = -speed * Math.sin(ang) * PPM;
+            const b = new Body(40, H - r - 10, vx, vy, m, r);
+            objects.push(b);
+            break;
+        }
+
+        case 'collision': {
+            const v = 6 * PPM; // 6 m/s
+            const b1 = new Body(W * 0.28, H / 2, v, 0, m, r, { color: '#4d7fff' });
+            const b2 = new Body(W * 0.72, H / 2, -v, 0, m * 1.5, r * 1.2, { color: '#ec4899' });
+            objects.push(b1, b2);
+            break;
+        }
+
+        case 'pendulum': {
+            const ang = settings.angle * Math.PI / 180;
+            const pivotX = W / 2;
+            const pivotY = Math.max(60, H * 0.18);
+            const length = Math.min(H * 0.5, 220);
+            const x = pivotX + length * Math.sin(ang);
+            const y = pivotY + length * Math.cos(ang);
+            const b = new Body(x, y, 0, 0, m, r, {
+                type: 'pendulum',
+                pivotX, pivotY, length,
+                angle: ang,
+                color: '#4d7fff'
+            });
+            objects.push(b);
+            break;
+        }
+
+        case 'spring': {
+            const anchorY = Math.max(50, H * 0.15);
+            const restLength = Math.min(H * 0.4, 180);
+            const b = new Body(W / 2, anchorY + restLength + 40, 0, 0, m, r, {
+                type: 'spring',
+                anchorY,
+                restLength,
+                springK: 8, // N/m in our units
+                color: '#10b981'
+            });
+            objects.push(b);
+            break;
+        }
+
+        case 'orbit': {
+            const sunMass = 400;
+            const orbitR = Math.min(W, H) * 0.28;
+            const sun = new Body(W / 2, H / 2, 0, 0, sunMass, r * 1.6, {
+                isStatic: true,
+                color: '#f59e0b'
+            });
+            // Circular orbit velocity: v = sqrt(G*M / r)
+            const G = 30;
+            const v = Math.sqrt(G * sunMass / orbitR) * PPM * 0.14;
+            const planet = new Body(
+                W / 2 + orbitR, H / 2,
+                0, -v,
+                m, r,
+                { color: '#4d7fff' }
+            );
+            objects.push(sun, planet);
+            break;
+        }
+    }
+
+    updateStats();
+}
+
+// ══════════════════════════════════════════════
+// PHYSICS UPDATE (fixed substeps for stability)
+// ══════════════════════════════════════════════
+const MAX_STEP = 1 / 120; // 120 Hz substeps
+
+function updatePhysics(dt) {
+    // Clamp dt and split into substeps
+    dt = Math.min(dt, 0.05);
+    let remaining = dt;
+    while (remaining > 0) {
+        const step = Math.min(remaining, MAX_STEP);
+        physicsStep(step);
+        remaining -= step;
+    }
+    simTime += dt;
+}
+
+function physicsStep(dt) {
+    const g = settings.gravity * PPM; // px/s²
+    const drag = settings.drag;
+
+    // ── Integrate each body ──
+    for (const o of objects) {
+        if (o.isStatic) continue;
+
+        if (o.type === 'pendulum') {
+            updatePendulum(o, dt, g);
+        } else if (o.type === 'spring') {
+            updateSpring(o, dt, g);
+        } else {
+            updateFreeBody(o, dt, g, drag);
+        }
+
+        // Bounds (with world walls)
+        collideWalls(o);
+    }
+
+    // ── Body-body collisions ──
+    resolveCollisions();
+
+    // ── Orbital gravity (only in orbit mode) ──
+    if (settings.mode === 'orbit') {
+        applyOrbitalGravity(dt);
+    }
+
+    // ── Trail management ──
+    const trailLen = { none: 0, short: 12, medium: 40, long: 120 }[settings.trails];
+    for (const o of objects) {
+        if (trailLen > 0) {
+            o.trail.push({ x: o.x, y: o.y });
+            while (o.trail.length > trailLen) o.trail.shift();
+        } else if (o.trail.length) {
+            o.trail.length = 0;
+        }
+    }
+}
+
+function updateFreeBody(o, dt, g, drag) {
+    // Gravity
+    o.vy += g * dt;
+
+    // Air drag (linear damping + quadratic)
+    if (drag > 0) {
+        const speed = Math.hypot(o.vx, o.vy);
+        if (speed > 0) {
+            const dragForce = drag * speed * 0.5;
+            const factor = Math.max(0, 1 - (dragForce / speed) * dt);
+            o.vx *= factor;
+            o.vy *= factor;
+        }
+    }
+
+    o.x += o.vx * dt;
+    o.y += o.vy * dt;
+}
+
+function updatePendulum(o, dt, g) {
+    // Real pendulum: α = -(g/L) · sin(θ)
+    // θ is measured from vertical-down
+    const angularAcc = -(g / o.length) * Math.sin(o.angle);
+    o.angularVel += angularAcc * dt;
+    o.angularVel *= 0.999; // tiny damping
+
+    o.angle += o.angularVel * dt;
+
+    const newX = o.pivotX + o.length * Math.sin(o.angle);
+    const newY = o.pivotY + o.length * Math.cos(o.angle);
+
+    // Compute velocity from position delta (for vectors/stats)
+    o.vx = (newX - o.x) / dt;
+    o.vy = (newY - o.y) / dt;
+
+    o.x = newX;
+    o.y = newY;
+}
+
+function updateSpring(o, dt, g) {
+    // Simple vertical spring anchored at anchorY
+    const extension = o.y - (o.anchorY + o.restLength);
+
+    // F = -k·x (Hooke's law)
+    const springForce = -o.springK * extension;
+
+    // a = F/m + g
+    const acc = (springForce / o.mass) + g;
+    o.vy += acc * dt;
+
+    // Damping (light)
+    o.vy *= 0.995;
+
+    o.y += o.vy * dt;
+    o.x = W / 2; // keep centered
+}
+
+function collideWalls(o) {
+    const e = settings.elasticity;
+
+    if (o.y + o.radius > H) {
+        o.y = H - o.radius;
+        if (o.vy > 0) o.vy = -o.vy * e;
+        // ground friction
+        o.vx *= 0.98;
+    }
+    if (o.y - o.radius < 0) {
+        o.y = o.radius;
+        if (o.vy < 0) o.vy = -o.vy * e;
+    }
+    if (o.x + o.radius > W) {
+        o.x = W - o.radius;
+        if (o.vx > 0) o.vx = -o.vx * e;
+    }
+    if (o.x - o.radius < 0) {
+        o.x = o.radius;
+        if (o.vx < 0) o.vx = -o.vx * e;
+    }
+}
+
+function resolveCollisions() {
+    const e = settings.elasticity;
+
+    for (let i = 0; i < objects.length; i++) {
+        for (let j = i + 1; j < objects.length; j++) {
+            const a = objects[i];
+            const b = objects[j];
+            if (a.isStatic && b.isStatic) continue;
+
+            const dx = b.x - a.x;
+            const dy = b.y - a.y;
+            const distSq = dx * dx + dy * dy;
+            const minDist = a.radius + b.radius;
+
+            if (distSq >= minDist * minDist || distSq === 0) continue;
+
+            const dist = Math.sqrt(distSq);
+            const nx = dx / dist;
+            const ny = dy / dist;
+
+            // Relative velocity along normal
+            const rvx = b.vx - a.vx;
+            const rvy = b.vy - a.vy;
+            const velAlongNormal = rvx * nx + rvy * ny;
+
+            // ← FIX: only resolve if approaching
+            if (velAlongNormal > 0) continue;
+
+            // Impulse
+            const invMa = a.isStatic ? 0 : 1 / a.mass;
+            const invMb = b.isStatic ? 0 : 1 / b.mass;
+            const invSum = invMa + invMb;
+            if (invSum === 0) continue;
+
+            const jImp = -(1 + e) * velAlongNormal / invSum;
+
+            if (!a.isStatic) { a.vx -= jImp * nx * invMa; a.vy -= jImp * ny * invMa; }
+            if (!b.isStatic) { b.vx += jImp * nx * invMb; b.vy += jImp * ny * invMb; }
+
+            // Positional correction
+            const overlap = minDist - dist;
+            const corrScale = 0.8;
+            if (!a.isStatic && !b.isStatic) {
+                a.x -= nx * overlap * 0.5 * corrScale;
+                a.y -= ny * overlap * 0.5 * corrScale;
+                b.x += nx * overlap * 0.5 * corrScale;
+                b.y += ny * overlap * 0.5 * corrScale;
+            } else if (!a.isStatic) {
+                a.x -= nx * overlap * corrScale;
+                a.y -= ny * overlap * corrScale;
+            } else if (!b.isStatic) {
+                b.x += nx * overlap * corrScale;
+                b.y += ny * overlap * corrScale;
+            }
+        }
+    }
+}
+
+function applyOrbitalGravity(dt) {
+    const G = 30;
+    for (let i = 0; i < objects.length; i++) {
+        const a = objects[i];
+        if (a.isStatic) continue;
+        for (let j = 0; j < objects.length; j++) {
+            if (i === j) continue;
+            const b = objects[j];
+            if (!b.isStatic) continue;
+
+            const dx = b.x - a.x;
+            const dy = b.y - a.y;
+            const distSq = dx * dx + dy * dy;
+            const dist = Math.sqrt(distSq);
+            if (dist < 1) continue;
+
+            const force = G * b.mass / distSq;
+            // a = G·M/r² (in our px units, scaled)
+            a.vx += (dx / dist) * force * dt * 0.08;
+            a.vy += (dy / dist) * force * dt * 0.08;
+        }
+    }
+}
+
+// ══════════════════════════════════════════════
+// RENDERING
+// ══════════════════════════════════════════════
+let bgFade = 0;
+
+function draw() {
+    // Slight motion blur for trails
+    ctx.fillStyle = 'rgba(6, 16, 32, 0.35)';
+    ctx.fillRect(0, 0, W, H);
+
+    // Grid
+    if (settings.grid) {
+        ctx.strokeStyle = 'rgba(77, 127, 255, 0.08)';
+        ctx.lineWidth = 1;
+        const gridStep = 50;
+        ctx.beginPath();
+        for (let x = 0; x <= W; x += gridStep) {
+            ctx.moveTo(x + 0.5, 0);
+            ctx.lineTo(x + 0.5, H);
+        }
+        for (let y = 0; y <= H; y += gridStep) {
+            ctx.moveTo(0, y + 0.5);
+            ctx.lineTo(W, y + 0.5);
+        }
+        ctx.stroke();
+
+        // Ground line
+        ctx.strokeStyle = 'rgba(77, 127, 255, 0.25)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, H - 1);
+        ctx.lineTo(W, H - 1);
+        ctx.stroke();
+    }
+
+    // Draw constraints first
+    for (const o of objects) {
+        if (o.type === 'pendulum') drawPendulumRod(o);
+        if (o.type === 'spring') drawSpring(o);
+    }
+
+    // Draw objects
+    for (const o of objects) drawBody(o);
+}
+
+function drawPendulumRod(o) {
+    ctx.strokeStyle = 'rgba(232, 238, 247, 0.35)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(o.pivotX, o.pivotY);
+    ctx.lineTo(o.x, o.y);
+    ctx.stroke();
+
+    // Pivot
+    ctx.fillStyle = '#4d7fff';
+    ctx.beginPath();
+    ctx.arc(o.pivotX, o.pivotY, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+}
+
+function drawSpring(o) {
+    const coils = 12;
+    const amp = 12;
+    const y0 = o.anchorY;
+    const y1 = o.y;
+    const x = W / 2;
+
+    ctx.strokeStyle = 'rgba(16, 185, 129, 0.7)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x, y0);
+
+    const totalH = y1 - y0;
+    for (let i = 1; i < coils * 2; i++) {
+        const t = i / (coils * 2);
+        const py = y0 + totalH * t;
+        const px = x + (i % 2 === 0 ? -amp : amp);
+        ctx.lineTo(px, py);
+    }
+    ctx.lineTo(x, y1);
+    ctx.stroke();
+
+    // Anchor
+    ctx.fillStyle = '#10b981';
+    ctx.beginPath();
+    ctx.arc(x, y0, 5, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+function drawBody(o) {
+    // Trail
+    if (o.trail.length > 1) {
+        ctx.strokeStyle = o.color;
+        ctx.globalAlpha = 0.35;
+        ctx.lineWidth = Math.max(1.5, o.radius * 0.15);
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(o.trail[0].x, o.trail[0].y);
+        for (let i = 1; i < o.trail.length; i++) {
+            ctx.lineTo(o.trail[i].x, o.trail[i].y);
+        }
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+    }
+
+    // Glow
+    ctx.shadowBlur = o.isStatic ? 30 : 18;
+    ctx.shadowColor = o.color;
+
+    // Body
+    ctx.fillStyle = o.color;
+    ctx.beginPath();
+    ctx.arc(o.x, o.y, o.radius, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.shadowBlur = 0;
+
+    // Inner highlight
+    const grad = ctx.createRadialGradient(
+        o.x - o.radius * 0.35, o.y - o.radius * 0.35, 1,
+        o.x, o.y, o.radius
+    );
+    grad.addColorStop(0, 'rgba(255, 255, 255, 0.5)');
+    grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(o.x, o.y, o.radius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Vectors
+    const showV = settings.vectors;
+    if (showV === 'velocity' || showV === 'both') {
+        const k = 0.25;
+        drawArrow(o.x, o.y, o.vx * k, o.vy * k, '#4d7fff', 2);
+    }
+    if ((showV === 'force' || showV === 'both') && !o.isStatic) {
+        // Gravitational force arrow
+        const g = settings.gravity;
+        const fmag = g * o.mass * 0.04;
+        drawArrow(o.x, o.y, 0, fmag, '#ef4444', 2);
+    }
+}
+
+function drawArrow(x, y, vx, vy, color, lw) {
+    const len = Math.hypot(vx, vy);
+    if (len < 2) return;
+
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = lw;
+
+    const ex = x + vx, ey = y + vy;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(ex, ey);
+    ctx.stroke();
+
+    // Arrowhead
+    const ang = Math.atan2(vy, vx);
+    const h = Math.min(10, len * 0.35);
+    ctx.beginPath();
+    ctx.moveTo(ex, ey);
+    ctx.lineTo(ex - h * Math.cos(ang - Math.PI / 6), ey - h * Math.sin(ang - Math.PI / 6));
+    ctx.lineTo(ex - h * Math.cos(ang + Math.PI / 6), ey - h * Math.sin(ang + Math.PI / 6));
+    ctx.closePath();
+    ctx.fill();
+}
+
+// ══════════════════════════════════════════════
+// STATS
+// ══════════════════════════════════════════════
+function updateStats() {
+    document.getElementById('statObjects').textContent = objects.length;
+    document.getElementById('statTime').textContent = simTime.toFixed(1) + 's';
+
+    let ke = 0, pe = 0, px = 0, py = 0;
+    const g = settings.gravity;
+
+    for (const o of objects) {
+        if (o.isStatic) continue;
+        // Use m/s units (velocity / PPM)
+        const vxM = o.vx / PPM;
+        const vyM = o.vy / PPM;
+        const speedSq = vxM * vxM + vyM * vyM;
+        ke += 0.5 * o.mass * speedSq;
+        // Height in meters above ground
+        const heightM = (H - o.y) / PPM;
+        pe += o.mass * g * heightM;
+        px += o.mass * vxM;
+        py += o.mass * vyM;
+    }
+
+    document.getElementById('statEnergy').textContent = (ke + pe).toFixed(0) + ' J';
+    const mom = Math.hypot(px, py);
+    document.getElementById('statMomentum').textContent = mom.toFixed(1) + ' kg·m/s';
+}
+
+// ══════════════════════════════════════════════
+// ANIMATION LOOP
+// ══════════════════════════════════════════════
+let lastT = 0;
+let statsAccum = 0;
+
+function loop(t) {
+    requestAnimationFrame(loop);
+
+    if (!lastT) lastT = t;
+    const dt = Math.min((t - lastT) / 1000, 0.05);
+    lastT = t;
+
+    if (isPlaying) {
+        updatePhysics(dt * settings.timeScale);
+    }
+
+    draw();
+
+    statsAccum += dt;
+    if (statsAccum > 0.1) {
+        updateStats();
+        statsAccum = 0;
+    }
+}
+
+// ══════════════════════════════════════════════
+// UI WIRING
+// ══════════════════════════════════════════════
+
+// Play / Pause
+const playBtn = document.getElementById('playBtn');
+playBtn.addEventListener('click', () => {
+    isPlaying = !isPlaying;
+    playBtn.innerHTML = isPlaying
+        ? '<i class="fa-solid fa-pause"></i> <span>Pause</span>'
+        : '<i class="fa-solid fa-play"></i> <span>Play</span>';
+});
+
+// Reset
+document.getElementById('resetBtn').addEventListener('click', () => {
+    setupSimulation(settings.mode);
+});
+
+// Clear
+document.getElementById('clearBtn').addEventListener('click', () => {
+    objects = [];
+    simTime = 0;
+    updateStats();
+});
+
+// Mode buttons
+document.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        settings.mode = btn.dataset.sim;
+        const titles = {
+            freefall: 'Free Fall',
+            projectile: 'Projectile Motion',
+            collision: 'Elastic Collision',
+            pendulum: 'Simple Pendulum',
+            spring: 'Spring Oscillator',
+            orbit: 'Orbital Motion'
+        };
+        document.getElementById('simTitle').textContent = titles[settings.mode];
+        setupSimulation(settings.mode);
+    });
+});
+
+// Sliders
+function bindSlider(id, key, format) {
+    const el = document.getElementById(id);
+    const valEl = document.getElementById(id + 'Val');
+    el.addEventListener('input', () => {
+        const v = parseFloat(el.value);
+        settings[key] = v;
+        valEl.textContent = format(v);
+    });
+}
+
+bindSlider('gravity', 'gravity', v => v.toFixed(1));
+bindSlider('drag', 'drag', v => v.toFixed(2));
+bindSlider('elasticity', 'elasticity', v => v.toFixed(2));
+bindSlider('timeScale', 'timeScale', v => v.toFixed(1) + '×');
+bindSlider('mass', 'mass', v => v.toFixed(0) + ' kg');
+bindSlider('size', 'size', v => v.toFixed(0) + ' px');
+bindSlider('speed', 'speed', v => v.toFixed(0) + ' m/s');
+bindSlider('angle', 'angle', v => v.toFixed(0) + '°');
+
+// Pills (vectors)
+document.querySelectorAll('#vectorPills .pill').forEach(p => {
+    p.addEventListener('click', () => {
+        document.querySelectorAll('#vectorPills .pill').forEach(x => x.classList.remove('active'));
+        p.classList.add('active');
+        settings.vectors = p.dataset.val;
+    });
+});
+
+// Pills (trails)
+document.querySelectorAll('#trailPills .pill').forEach(p => {
+    p.addEventListener('click', () => {
+        document.querySelectorAll('#trailPills .pill').forEach(x => x.classList.remove('active'));
+        p.classList.add('active');
+        settings.trails = p.dataset.val;
+        // Clear existing trails immediately
+        objects.forEach(o => o.trail.length = 0);
+    });
+});
+
+// Grid toggle
+const gridToggle = document.getElementById('gridToggle');
+gridToggle.addEventListener('click', () => {
+    settings.grid = !settings.grid;
+    gridToggle.classList.toggle('on', settings.grid);
+});
+
+// Canvas tap → add object
+canvas.addEventListener('pointerdown', (e) => {
+    if (!isPlaying) return; // Only allow adding while running? Actually allow always.
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const b = new Body(x, y, 0, 0, settings.mass, settings.size);
+    objects.push(b);
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT') return;
+    switch (e.key) {
+        case ' ':
+            e.preventDefault();
+            playBtn.click();
+            break;
+        case 'r': case 'R':
+            document.getElementById('resetBtn').click();
+            break;
+        case 'c': case 'C':
+            document.getElementById('clearBtn').click();
+            break;
+        case '1': case '2': case '3': case '4': case '5': case '6': {
+            const idx = parseInt(e.key, 10) - 1;
+            const btns = document.querySelectorAll('.mode-btn');
+            if (btns[idx]) btns[idx].click();
+            break;
+        }
+    }
+});
+
+// Resize
+window.addEventListener('resize', resizeCanvas);
+window.addEventListener('orientationchange', () => setTimeout(resizeCanvas, 100));
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+resizeCanvas();
+setupSimulation('freefall');
+requestAnimationFrame(loop);
+
+})();
+</script>
+
+</body>
+</html>
