@@ -16,8 +16,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 
-<!-- FIX #13: crossorigin for CDN scripts -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" crossorigin="anonymous"></script>
+<!-- QR Code libraries with fallback -->
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" crossorigin="anonymous" onerror="console.warn('Primary QRCode CDN failed')"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js" crossorigin="anonymous"></script>
 
 <style>
@@ -820,6 +821,13 @@
             return;
         }
 
+        if (typeof QRCode === 'undefined') {
+            setQRStatus('QR library is still loading, please try again in a moment.', 'err');
+            // Retry after 1 second
+            setTimeout(generateQR, 1000);
+            return;
+        }
+
         const size = qrSize();
         const correction = qrCorrection();
         const fg = qrFg();
@@ -881,6 +889,7 @@
     }
 
     function getCorrectionLevel(level) {
+        if (typeof QRCode === 'undefined') return 1; // fallback M level
         const map = { 'L': QRCode.CorrectLevel.L, 'M': QRCode.CorrectLevel.M, 'Q': QRCode.CorrectLevel.Q, 'H': QRCode.CorrectLevel.H };
         return map[level] || QRCode.CorrectLevel.M;
     }
