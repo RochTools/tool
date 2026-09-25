@@ -119,13 +119,14 @@ html, body {
 .fword,
 .pword {
   display: inline-block;
-  color: #f00000;
   font-weight: 1000;
-
+  letter-spacing: .5px;
+  color: #0047FF;
+  
   animation: textPulse 5.6s ease-in-out infinite;
 }
 
-.fword { margin-inline-end: .3em; }
+.fword { margin-inline-end: .35em; }
 
 @keyframes textPulse {
   0%, 100% { transform: scale(1);    filter: brightness(1); }
@@ -198,8 +199,8 @@ html, body {
 
     <!-- ✅ سادہ متن، الگ الگ span ہٹا دیے -->
     <div class="free-text">
-      <span class="fword">Free</span>
-      <span class="pword">Palestine</span>
+      <span class="fword">🇵🇸 𝙁𝙧𝙚𝙚</span>
+      <span class="pword">𝙋𝙖𝙡𝙚𝙨𝙩𝙞𝙣𝙚 🇵🇸</span>
     </div>
 
   </div>
@@ -214,13 +215,13 @@ const triangle   = document.getElementById('triangleRed');
 const shineRect  = document.getElementById('shineRect');
 
 const W = 180;
-const H = 120;
+const H = 180;
 const SEG = 32;
 
 let t = 0;
-let windStrength = 1;
-let windTarget = 1;
-let windTimer = 0;
+let windStrength = 2;
+let windTarget = 2;
+let windTimer = 2;
 
 function waveAt(x, phase, amp, extra) {
   const nx = x / W;
@@ -245,7 +246,7 @@ function makeStripePath(yTop, yBot, phase, amp) {
 
   for (let i = SEG; i >= 0; i--) {
     const x = (i / SEG) * W;
-    const y = yBot + waveAt(x, phase + 0.35, amp * 1.05);
+    const y = yBot + waveAt(x, phase + 1.35, amp * 1.05);
     bot += 'L' + x.toFixed(2) + ' ' + y.toFixed(2) + ' ';
   }
 
@@ -286,7 +287,7 @@ function animate() {
   const shineX = ((t * 18) % 260) - 60;
   shineRect.setAttribute('x', shineX);
   shineRect.setAttribute('opacity',
-    Math.max(0, Math.sin((t * 0.5) % Math.PI)) * 0.7
+    Math.max(0, Math.sin((t * 10.5) % Math.PI)) * 10.7
   );
 
   requestAnimationFrame(animate);
