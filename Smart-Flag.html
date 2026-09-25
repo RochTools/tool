@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Flag</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+  font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+}
+
+/* پورا ایریا */
+.app-header {
+  width: 100%;
+  height: 100%;
+  background: transparent;   /* ← گرین بیک گراؤنڈ ہٹا دیا */
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* FLAG WRAPPER */
+.flag-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  z-index: 2;
+}
+
+/* POLE */
+.pole {
+  position: absolute;
+  right: 112px;
+  top: 7px;
+  width: 3px;
+  height: 56px;
+  border-radius: 5px;
+  background: linear-gradient(90deg,
+    #76552e, #f3d58c, #a47736, #f7dfa1, #76552e);
+  box-shadow: 0 0 4px rgba(0,0,0,.45);
+  animation: poleCycle 8s ease-in-out infinite;
+}
+
+.pole::before {
+  content: "";
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: #e8c66d;
+  box-shadow: 0 1px 4px rgba(0,0,0,.5);
+}
+
+/* FLAG CONTAINER */
+.flag-outer {
+  position: absolute;
+  right: 32px;
+  top: 12px;
+  width: 78px;
+  height: 40px;
+  transform-origin: left center;
+  filter: drop-shadow(2px 4px 5px rgba(0,0,0,.32));
+  animation: flagVisibility 8s ease-in-out infinite;
+}
+
+.flag-inner {
+  width: 100%;
+  height: 100%;
+  transform-origin: left center;
+}
+
+.flag-inner svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+
+/* FLAG SHOW / HIDE */
+@keyframes flagVisibility {
+  0%, 43%   { opacity: 1; transform: scale(1); }
+  48%       { opacity: 0; transform: scale(.3); }
+  76%       { opacity: 0; transform: scale(.3); }
+  82%, 100% { opacity: 1; transform: scale(1); }
+}
+
+/* FREE PALESTINE TEXT */
+.free-text {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .4px;
+  white-space: nowrap;
+  opacity: 0;
+  animation: textCycle 8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.fword,
+.pword {
+  display: inline-block;
+  background: linear-gradient(180deg, #ffb3ab 0%, #ff4d4d 45%, #ffb3ab 100%);
+  background-size: 100% 250%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 1px 2px rgba(0,0,0,.4);
+  filter: drop-shadow(0 0 3px rgba(255,255,255,.4))
+          drop-shadow(0 0 6px rgba(255,60,60,.55));
+  animation: letterShimmer 2.4s linear infinite;
+}
+
+.fword { margin-inline-end: .3em; }
+
+.fword span {
+  display: inline-block;
+  animation: letterBounce 2.4s ease-in-out infinite;
+}
+.fword span:nth-child(1) { animation-delay: 0.00s; }
+.fword span:nth-child(2) { animation-delay: 0.08s; }
+.fword span:nth-child(3) { animation-delay: 0.16s; }
+.fword span:nth-child(4) { animation-delay: 0.24s; }
+
+@keyframes textCycle {
+  0%, 44%   { opacity: 0; }
+  50%       { opacity: 1; }
+  74%       { opacity: 1; }
+  81%       { opacity: 0; }
+  100%      { opacity: 0; }
+}
+
+@keyframes letterBounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50%      { transform: translateY(-3px) scale(1.08); }
+}
+
+@keyframes letterShimmer {
+  0%   { background-position: 0 0; }
+  100% { background-position: 0 250%; }
+}
+
+@keyframes poleCycle {
+  0%, 44%   { opacity: 1; }
+  50%, 76%  { opacity: 0; }
+  82%, 100% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flag-outer, .pole, .free-text, .fword, .pword, .fword span {
+    animation: none;
+  }
+  .flag-outer { opacity: 1; }
+  .free-text { opacity: 0; }
+  .pole { opacity: 1; }
+}
+</style>
+</head>
+
+<body>
+
+<header class="app-header">
+  <div class="flag-wrapper">
+
+    <div class="pole"></div>
+
+    <div class="flag-outer">
+      <div class="flag-inner">
+        <svg id="flagSvg" viewBox="0 0 180 120" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="flagShine" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%"   stop-color="#fff" stop-opacity="0"/>
+              <stop offset="50%"  stop-color="#fff" stop-opacity=".35"/>
+              <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+            </linearGradient>
+
+            <linearGradient id="flagShadow" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%"   stop-color="#000" stop-opacity=".25"/>
+              <stop offset="40%"  stop-color="#000" stop-opacity="0"/>
+              <stop offset="70%"  stop-color="#000" stop-opacity="0"/>
+              <stop offset="100%" stop-color="#000" stop-opacity=".2"/>
+            </linearGradient>
+          </defs>
+
+          <path id="stripeBlack" fill="#000000"/>
+          <path id="stripeWhite" fill="#ffffff"/>
+          <path id="stripeGreen" fill="#007A3D"/>
+          <path id="triangleRed" fill="#CE1126"/>
+
+          <rect id="shineRect" x="-40" y="0" width="30" height="120"
+                fill="url(#flagShine)" opacity="0"/>
+
+          <rect x="0" y="0" width="180" height="120"
+                fill="url(#flagShadow)" pointer-events="none"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="free-text">
+      <span class="fword"><span>F</span><span>r</span><span>e</span><span>e</span></span>
+      <span class="pword">Palestine</span>
+    </div>
+
+  </div>
+</header>
+
+<script>
+const svg        = document.getElementById('flagSvg');
+const stripeBlk  = document.getElementById('stripeBlack');
+const stripeWht  = document.getElementById('stripeWhite');
+const stripeGrn  = document.getElementById('stripeGreen');
+const triangle   = document.getElementById('triangleRed');
+const shineRect  = document.getElementById('shineRect');
+
+const W = 180;
+const H = 120;
+const SEG = 32;
+
+let t = 0;
+let windStrength = 1;
+let windTarget = 1;
+let windTimer = 0;
+
+function waveAt(x, phase, amp, extra) {
+  const nx = x / W;
+  const taper = Math.pow(nx, 1.3);
+
+  const w1 = Math.sin(nx * Math.PI * 2.0 + t + phase);
+  const w2 = Math.sin(nx * Math.PI * 3.4 + t * 1.6 + phase * 1.3) * 0.45;
+  const w3 = Math.sin(nx * Math.PI * 1.1 - t * 0.7 + phase * 0.6) * 0.3;
+
+  return (w1 + w2 + w3) * amp * taper * windStrength + (extra || 0);
+}
+
+function makeStripePath(yTop, yBot, phase, amp) {
+  let top = '';
+  let bot = '';
+
+  for (let i = 0; i <= SEG; i++) {
+    const x = (i / SEG) * W;
+    const y = yTop + waveAt(x, phase, amp);
+    top += (i === 0 ? 'M' : 'L') + x.toFixed(2) + ' ' + y.toFixed(2) + ' ';
+  }
+
+  for (let i = SEG; i >= 0; i--) {
+    const x = (i / SEG) * W;
+    const y = yBot + waveAt(x, phase + 0.35, amp * 1.05);
+    bot += 'L' + x.toFixed(2) + ' ' + y.toFixed(2) + ' ';
+  }
+
+  return top + bot + 'Z';
+}
+
+function makeTrianglePath() {
+  const topX = 0, topY = 0;
+  const midX = 67, midY = 60;
+  const botX = 0, botY = 120;
+
+  const wobble = Math.sin(t * 1.2) * 1.5 * windStrength;
+
+  return `
+    M ${topX} ${topY + wobble * 0.3}
+    Q ${midX * 0.5} ${midY * 0.5 + wobble} ${midX} ${midY + wobble}
+    Q ${midX * 0.5} ${midY * 1.5 + wobble} ${botX} ${botY + wobble * 0.3}
+    Z
+  `;
+}
+
+function animate() {
+  t += 0.085;
+
+  windTimer -= 1;
+  if (windTimer <= 0) {
+    windTarget = 0.7 + Math.random() * 0.7;
+    windTimer = 60 + Math.random() * 90;
+  }
+  windStrength += (windTarget - windStrength) * 0.02;
+
+  stripeBlk.setAttribute('d', makeStripePath(0,   40,  0,    7));
+  stripeWht.setAttribute('d', makeStripePath(40,  80,  0.8,  8));
+  stripeGrn.setAttribute('d', makeStripePath(80,  120, 1.6,  9));
+
+  triangle.setAttribute('d', makeTrianglePath());
+
+  const shineX = ((t * 18) % 260) - 60;
+  shineRect.setAttribute('x', shineX);
+  shineRect.setAttribute('opacity',
+    Math.max(0, Math.sin((t * 0.5) % Math.PI)) * 0.7
+  );
+
+  requestAnimationFrame(animate);
+}
+
+animate();
+</script>
+
+</body>
+</html>
