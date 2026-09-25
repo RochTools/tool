@@ -19,7 +19,7 @@ html, body {
 .app-header {
   width: 100%;
   height: 100%;
-  background: transparent;   /* ← گرین بیک گراؤنڈ ہٹا دیا */
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -42,10 +42,10 @@ html, body {
 /* POLE */
 .pole {
   position: absolute;
-  right: 112px;
+  right: 102px;
   top: 7px;
   width: 3px;
-  height: 56px;
+  height: 50px;
   border-radius: 5px;
   background: linear-gradient(90deg,
     #76552e, #f3d58c, #a47736, #f7dfa1, #76552e);
@@ -71,8 +71,8 @@ html, body {
   position: absolute;
   right: 32px;
   top: 12px;
-  width: 78px;
-  height: 40px;
+  width: 70px;
+  height: 30px;
   transform-origin: left center;
   filter: drop-shadow(2px 4px 5px rgba(0,0,0,.32));
   animation: flagVisibility 8s ease-in-out infinite;
@@ -102,42 +102,35 @@ html, body {
 /* FREE PALESTINE TEXT */
 .free-text {
   position: absolute;
-  right: 4px;
+  right: 6px;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 9px;
-  font-weight: 900;
+  font-size: 15px;
+  font-weight: 1000;
   letter-spacing: .4px;
   white-space: nowrap;
   opacity: 0;
   animation: textCycle 8s ease-in-out infinite;
   pointer-events: none;
+  z-index: 5;
 }
 
+/* ✅ FIX: gradient + per-letter transform کا bug ہٹا دیا */
 .fword,
 .pword {
   display: inline-block;
-  background: linear-gradient(180deg, #ffb3ab 0%, #ff4d4d 45%, #ffb3ab 100%);
-  background-size: 100% 250%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  text-shadow: 0 1px 2px rgba(0,0,0,.4);
-  filter: drop-shadow(0 0 3px rgba(255,255,255,.4))
-          drop-shadow(0 0 6px rgba(255,60,60,.55));
-  animation: letterShimmer 2.4s linear infinite;
+  color: #f00000;
+  font-weight: 1000;
+
+  animation: textPulse 5.6s ease-in-out infinite;
 }
 
 .fword { margin-inline-end: .3em; }
 
-.fword span {
-  display: inline-block;
-  animation: letterBounce 2.4s ease-in-out infinite;
+@keyframes textPulse {
+  0%, 100% { transform: scale(1);    filter: brightness(1); }
+  50%      { transform: scale(1.08); filter: brightness(1.35); }
 }
-.fword span:nth-child(1) { animation-delay: 0.00s; }
-.fword span:nth-child(2) { animation-delay: 0.08s; }
-.fword span:nth-child(3) { animation-delay: 0.16s; }
-.fword span:nth-child(4) { animation-delay: 0.24s; }
 
 @keyframes textCycle {
   0%, 44%   { opacity: 0; }
@@ -147,16 +140,6 @@ html, body {
   100%      { opacity: 0; }
 }
 
-@keyframes letterBounce {
-  0%, 100% { transform: translateY(0) scale(1); }
-  50%      { transform: translateY(-3px) scale(1.08); }
-}
-
-@keyframes letterShimmer {
-  0%   { background-position: 0 0; }
-  100% { background-position: 0 250%; }
-}
-
 @keyframes poleCycle {
   0%, 44%   { opacity: 1; }
   50%, 76%  { opacity: 0; }
@@ -164,7 +147,7 @@ html, body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .flag-outer, .pole, .free-text, .fword, .pword, .fword span {
+  .flag-outer, .pole, .free-text, .fword, .pword {
     animation: none;
   }
   .flag-outer { opacity: 1; }
@@ -213,8 +196,9 @@ html, body {
       </div>
     </div>
 
+    <!-- ✅ سادہ متن، الگ الگ span ہٹا دیے -->
     <div class="free-text">
-      <span class="fword"><span>F</span><span>r</span><span>e</span><span>e</span></span>
+      <span class="fword">Free</span>
       <span class="pword">Palestine</span>
     </div>
 
